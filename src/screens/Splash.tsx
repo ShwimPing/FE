@@ -1,8 +1,18 @@
 import React from 'react';
 import {View, Text, TouchableOpacity, StyleSheet} from 'react-native';
 import Svg, {Path, G, ClipPath, Defs, Rect} from 'react-native-svg';
+import {useNavigation} from '@react-navigation/native'; // useNavigation 훅 추가
+import {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import {RootStackParamList} from '../App';
+
+type SplashScreenNavigationProp = NativeStackNavigationProp<
+  RootStackParamList,
+  'Splash'
+>;
 
 const Splash = () => {
+  const navigation = useNavigation<SplashScreenNavigationProp>(); // 네비게이션 타입 지정
+
   return (
     <View style={styles.container}>
       <View style={styles.logoContainer}>
@@ -55,7 +65,9 @@ const Splash = () => {
         <Text style={styles.kakaoButtonText}>카카오로 시작하기</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.emailButton}>
+      <TouchableOpacity
+        style={styles.emailButton}
+        onPress={() => navigation.navigate('Login')}>
         <Text style={styles.emailButtonText}>이메일로 시작하기</Text>
       </TouchableOpacity>
 
