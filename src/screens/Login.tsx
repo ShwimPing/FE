@@ -7,8 +7,12 @@ import {
   StyleSheet,
   Image,
 } from 'react-native';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../App';
 
-const Login = () => {
+type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
+
+const Login: React.FC<Props> = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <View style={styles.logoContainer}>
@@ -50,7 +54,9 @@ const Login = () => {
         </TouchableOpacity>
       </View>
 
-      <TouchableOpacity style={styles.signupButton}>
+      <TouchableOpacity
+        style={styles.signupButton}
+        onPress={() => navigation.navigate('Terms')}>
         <Text style={styles.signupText}>회원가입</Text>
       </TouchableOpacity>
     </View>
