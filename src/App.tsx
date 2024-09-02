@@ -56,7 +56,7 @@ const App = () => {
               headerShadowVisible: false,
               headerTitleStyle: {
                 color: '#1A1A1B',
-                fontFamily: 'Pretendard-Semibold',
+                fontFamily: 'Pretendard-Bold',
                 fontSize: 14,
                 fontStyle: 'normal',
                 lineHeight: 21,

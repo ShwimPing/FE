@@ -108,14 +108,14 @@ const styles = StyleSheet.create({
   },
   loginButtonText: {
     color: '#FFF',
-    fontFamily: 'Pretendard-Semibold',
+    fontFamily: 'Pretendard-Bold',
     fontSize: 14,
     lineHeight: 21,
   },
   snsLoginText: {
     color: '#8E9398',
     textAlign: 'center',
-    fontFamily: 'Pretendard-Semibold',
+    fontFamily: 'Pretendard-Bold',
     fontSize: 12,
     fontStyle: 'normal',
     lineHeight: 18,
@@ -141,7 +141,7 @@ const styles = StyleSheet.create({
   },
   signupText: {
     color: '#1A1A1B',
-    fontFamily: 'Pretendard-Semibold',
+    fontFamily: 'Pretendard-Bold',
     fontSize: 12,
     fontStyle: 'normal',
     lineHeight: 18,
