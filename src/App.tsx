@@ -1,25 +1,40 @@
 import React from 'react';
-import { SafeAreaView, Text, StyleSheet } from 'react-native';
+import {NavigationContainer} from '@react-navigation/native';
+import {createNativeStackNavigator} from '@react-navigation/native-stack';
+import {enableScreens} from 'react-native-screens';
+import Splash from './screens/Splash';
+import {SafeAreaView, StyleSheet} from 'react-native';
 
-function App(): React.JSX.Element {
+enableScreens();
+
+const Stack = createNativeStackNavigator();
+
+const App = () => {
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.text}>shwimping</Text>
+      <NavigationContainer>
+        <Stack.Navigator
+          initialRouteName="Splash"
+          screenOptions={{
+            headerShown: false,
+            animation: 'fade',
+          }}>
+          <Stack.Screen
+            name="Splash"
+            component={Splash}
+            options={{
+              headerShown: false,
+            }}
+          />
+        </Stack.Navigator>
+      </NavigationContainer>
     </SafeAreaView>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-  },
-  text: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#000',
   },
 });
 
