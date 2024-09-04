@@ -12,6 +12,8 @@ import SignUpCompleteScreen from './screens/Signup/SignupCompleteScreen';
 import EmailPasswordScreen from './screens/Signup/EmailPasswordScreen';
 import ProfileScreen from './screens/Signup/ProfileScreen';
 import Home from './screens/Home';
+import ContentsList from './screens/ContentsList';
+import ContentDetail from './screens/ContentDetail';
 
 enableScreens();
 
@@ -23,6 +25,8 @@ export type RootStackParamList = {
   Profile: undefined;
   SignUpComplete: undefined;
   Home: undefined;
+  ContentsList: undefined;
+  ContentDetail: {title: string};
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -170,6 +174,40 @@ const App: React.FC = () => {
             component={Home}
             options={{
               headerShown: false,
+            }}
+          />
+          <Stack.Screen
+            name="ContentsList"
+            component={ContentsList}
+            options={{
+              headerShown: true,
+              headerTitle: '콘텐츠',
+              headerTitleAlign: 'center',
+              headerShadowVisible: false,
+              headerTitleStyle: {
+                color: '#1A1A1B',
+                fontFamily: 'Pretendard-Bold',
+                fontSize: 14,
+              },
+              headerLeft: () => null,
+              headerBackVisible: false,
+            }}
+          />
+          <Stack.Screen
+            name="ContentDetail"
+            component={ContentDetail}
+            options={{
+              headerShown: true,
+              headerTitle: '콘텐츠',
+              headerTitleAlign: 'center',
+              headerShadowVisible: false,
+              headerTitleStyle: {
+                color: '#1A1A1B',
+                fontFamily: 'Pretendard-Bold',
+                fontSize: 14,
+              },
+              headerLeft: () => null,
+              headerBackVisible: false,
             }}
           />
         </Stack.Navigator>
