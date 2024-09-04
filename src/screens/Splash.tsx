@@ -71,7 +71,9 @@ const Splash = () => {
         <Text style={styles.emailButtonText}>이메일로 시작하기</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.tourButton}>
+      <TouchableOpacity
+        style={styles.tourButton}
+        onPress={() => navigation.navigate('Home')}>
         <Text style={styles.tourButtonText}>둘러보기</Text>
       </TouchableOpacity>
     </View>

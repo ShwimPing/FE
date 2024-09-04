@@ -1,16 +1,17 @@
 /* eslint-disable react/no-unstable-nested-components */
 import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { enableScreens } from 'react-native-screens';
-import { SafeAreaView, StyleSheet, TouchableOpacity } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import {NavigationContainer} from '@react-navigation/native';
+import {createNativeStackNavigator} from '@react-navigation/native-stack';
+import {enableScreens} from 'react-native-screens';
+import {SafeAreaView, StyleSheet, TouchableOpacity} from 'react-native';
+import Svg, {Path} from 'react-native-svg';
 import Splash from './screens/Splash';
 import Login from './screens/Login';
 import TermsScreen from './screens/Signup/TermsScreen';
 import SignUpCompleteScreen from './screens/Signup/SignupCompleteScreen';
 import EmailPasswordScreen from './screens/Signup/EmailPasswordScreen';
 import ProfileScreen from './screens/Signup/ProfileScreen';
+import Home from './screens/Home';
 
 enableScreens();
 
@@ -21,6 +22,7 @@ export type RootStackParamList = {
   EmailPassword: undefined;
   Profile: undefined;
   SignUpComplete: undefined;
+  Home: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -51,7 +53,7 @@ const App: React.FC = () => {
           <Stack.Screen
             name="Login"
             component={Login}
-            options={({ navigation }) => ({
+            options={({navigation}) => ({
               headerShown: true,
               headerTitle: '로그인',
               headerTitleAlign: 'center',
@@ -74,7 +76,7 @@ const App: React.FC = () => {
           <Stack.Screen
             name="Terms"
             component={TermsScreen}
-            options={({ navigation }) => ({
+            options={({navigation}) => ({
               headerShown: true,
               headerTitle: '회원가입',
               headerTitleAlign: 'center',
@@ -97,7 +99,7 @@ const App: React.FC = () => {
           <Stack.Screen
             name="EmailPassword"
             component={EmailPasswordScreen}
-            options={({ navigation }) => ({
+            options={({navigation}) => ({
               headerShown: true,
               headerTitle: '회원가입',
               headerTitleAlign: 'center',
@@ -120,7 +122,7 @@ const App: React.FC = () => {
           <Stack.Screen
             name="Profile"
             component={ProfileScreen}
-            options={({ navigation }) => ({
+            options={({navigation}) => ({
               headerShown: true,
               headerTitle: '회원가입',
               headerTitleAlign: 'center',
@@ -143,7 +145,7 @@ const App: React.FC = () => {
           <Stack.Screen
             name="SignUpComplete"
             component={SignUpCompleteScreen}
-            options={({ navigation }) => ({
+            options={({navigation}) => ({
               headerShown: true,
               headerTitle: '회원가입',
               headerTitleAlign: 'center',
@@ -162,6 +164,13 @@ const App: React.FC = () => {
                 </TouchableOpacity>
               ),
             })}
+          />
+          <Stack.Screen
+            name="Home"
+            component={Home}
+            options={{
+              headerShown: false,
+            }}
           />
         </Stack.Navigator>
       </NavigationContainer>
