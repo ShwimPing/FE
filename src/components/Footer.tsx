@@ -10,7 +10,7 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 const Footer = () => {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute();
-  const [selectedMenu, setSelectedMenu] = useState<string>(route.name); // 현재 라우트 이름을 초기 값으로 사용
+  const [selectedMenu, setSelectedMenu] = useState<string>(route.name);
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('state', () => {
@@ -81,10 +81,9 @@ const Footer = () => {
           콘텐츠
         </Text>
       </TouchableOpacity>
-      {/* <TouchableOpacity
+      <TouchableOpacity
         style={styles.menuBox}
-        onPress={() => handleMenuPress('MyPage')}> */}
-      <TouchableOpacity style={styles.menuBox}>
+        onPress={() => handleMenuPress('MyPage')}>
         <Svg
           width="25"
           height="24"
