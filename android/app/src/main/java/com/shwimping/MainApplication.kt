@@ -39,5 +39,8 @@ class MainApplication : Application(), ReactApplication {
       // If you opted-in for the New Architecture, we load the native entry point for this app.
       load()
     }
+
+    // NaverMapSdk 초기화
+    NaverMapSdk.getInstance(this).client = NaverMapSdk.NaverCloudPlatformClient("0hsynm0y56")
   }
 }

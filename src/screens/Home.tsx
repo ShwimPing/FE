@@ -1,9 +1,63 @@
-import React from 'react';
-import {View, TextInput, StyleSheet} from 'react-native';
+import React, {useEffect, useState} from 'react';
+import {
+  View,
+  TextInput,
+  StyleSheet,
+  PermissionsAndroid,
+  Platform,
+  Alert,
+} from 'react-native';
 import Svg, {Path, G, ClipPath, Defs, Rect} from 'react-native-svg';
 import Footer from '../components/Footer';
+import NaverMapView, {Marker} from 'react-native-nmap';
+import Geolocation from 'react-native-geolocation-service';
 
 const Home = () => {
+  const [location, setLocation] = useState({
+    latitude: 37.5665, // 초기 위치 (서울)
+    longitude: 126.978,
+    zoom: 10,
+  });
+
+  useEffect(() => {
+    const requestLocationPermission = async () => {
+      if (Platform.OS === 'android') {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+        );
+        if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+          getCurrentLocation();
+        } else {
+          Alert.alert('위치 권한이 필요합니다.');
+        }
+      } else {
+        getCurrentLocation();
+      }
+    };
+
+    const getCurrentLocation = () => {
+      Geolocation.getCurrentPosition(
+        position => {
+          setLocation({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+            zoom: 16,
+          });
+        },
+        error => {
+          console.log('Error getting location: ', error);
+          Alert.alert(
+            '위치를 가져올 수 없습니다.',
+            '위치 서비스가 활성화되어 있는지 확인해주세요.',
+          );
+        },
+        {enableHighAccuracy: true, timeout: 15000, maximumAge: 10000},
+      );
+    };
+
+    requestLocationPermission();
+  }, []);
+
   return (
     <View style={styles.container}>
       <View style={styles.searchContainer}>
@@ -50,6 +104,25 @@ const Home = () => {
           </Svg>
         </View>
       </View>
+
+      <View style={styles.mapContainer}>
+        <NaverMapView
+          style={styles.map}
+          center={{
+            latitude: location.latitude,
+            longitude: location.longitude,
+            zoom: location.zoom,
+          }} // 현위치 적용
+        />
+        <Marker
+          coordinate={{
+            latitude: location.latitude,
+            longitude: location.longitude,
+          }} // 마커 위치
+          pinColor="blue"
+        />
+      </View>
+
       <Footer />
     </View>
   );
@@ -85,6 +158,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#222',
     padding: 0,
+  },
+  mapContainer: {
+    flex: 1,
+  },
+  map: {
+    width: '100%',
+    height: '100%',
   },
 });
 
