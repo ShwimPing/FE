@@ -6,6 +6,7 @@ import {
   PermissionsAndroid,
   Platform,
   Alert,
+  TouchableOpacity,
 } from 'react-native';
 import Svg, {Path, G, ClipPath, Defs, Rect} from 'react-native-svg';
 import Footer from '../components/Footer';
@@ -14,7 +15,7 @@ import Geolocation from 'react-native-geolocation-service';
 
 const Home = () => {
   const [location, setLocation] = useState({
-    latitude: 37.5665, // 초기 위치 (서울)
+    latitude: 37.5665,
     longitude: 126.978,
     zoom: 10,
   });
@@ -38,6 +39,7 @@ const Home = () => {
     const getCurrentLocation = () => {
       Geolocation.getCurrentPosition(
         position => {
+          console.log('Current Position:', position);
           setLocation({
             latitude: position.coords.latitude,
             longitude: position.coords.longitude,
@@ -57,6 +59,26 @@ const Home = () => {
 
     requestLocationPermission();
   }, []);
+
+  const moveToCurrentLocation = () => {
+    Geolocation.getCurrentPosition(
+      position => {
+        setLocation({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          zoom: 16,
+        });
+      },
+      error => {
+        console.log('Error getting location: ', error);
+        Alert.alert(
+          '위치를 가져올 수 없습니다.',
+          '위치 서비스가 활성화되어 있는지 확인해주세요.',
+        );
+      },
+      {enableHighAccuracy: true, timeout: 15000, maximumAge: 10000},
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -112,15 +134,33 @@ const Home = () => {
             latitude: location.latitude,
             longitude: location.longitude,
             zoom: location.zoom,
-          }} // 현위치 적용
+          }}
         />
         <Marker
           coordinate={{
             latitude: location.latitude,
             longitude: location.longitude,
-          }} // 마커 위치
+          }}
           pinColor="blue"
         />
+        <TouchableOpacity style={styles.currentLocationButton} onPress={moveToCurrentLocation}>
+          <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <Path
+              d="M12 2V4M12 20V22M4.93 4.93L6.34 6.34M17.66 17.66L19.07 19.07M2 12H4M20 12H22M4.93 19.07L6.34 17.66M17.66 6.34L19.07 4.93"
+              stroke="#000"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <Path
+              d="M12 8C14.2091 8 16 9.79086 16 12C16 14.2091 14.2091 16 12 16C9.79086 16 8 14.2091 8 12C8 9.79086 9.79086 8 12 8Z"
+              stroke="#000"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </Svg>
+        </TouchableOpacity>
       </View>
 
       <Footer />
@@ -161,10 +201,27 @@ const styles = StyleSheet.create({
   },
   mapContainer: {
     flex: 1,
+    justifyContent: 'center',
   },
   map: {
     width: '100%',
     height: '100%',
+  },
+  currentLocationButton: {
+    position: 'absolute',
+    bottom: 20,
+    right: 20,
+    width: 50,
+    height: 50,
+    backgroundColor: '#fff',
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.3,
+    shadowRadius: 3.84,
   },
 });
 
