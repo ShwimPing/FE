@@ -12,6 +12,11 @@ import SignUpCompleteScreen from './screens/Signup/SignupCompleteScreen';
 import EmailPasswordScreen from './screens/Signup/EmailPasswordScreen';
 import ProfileScreen from './screens/Signup/ProfileScreen';
 import Home from './screens/Home';
+import ContentsList from './screens/ContentsList';
+import ContentDetail from './screens/ContentDetail';
+import MyPage from './screens/MyPage/MyPage';
+import ProfileEdit from './screens/MyPage/ProfileEdit';
+import MyReview from './screens/MyPage/MyReview';
 
 enableScreens();
 
@@ -23,6 +28,11 @@ export type RootStackParamList = {
   Profile: undefined;
   SignUpComplete: undefined;
   Home: undefined;
+  ContentsList: undefined;
+  ContentDetail: {title: string};
+  MyPage: undefined;
+  ProfileEdit: undefined;
+  MyReview: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -171,6 +181,103 @@ const App: React.FC = () => {
             options={{
               headerShown: false,
             }}
+          />
+          <Stack.Screen
+            name="ContentsList"
+            component={ContentsList}
+            options={{
+              headerShown: true,
+              headerTitle: '콘텐츠',
+              headerTitleAlign: 'center',
+              headerShadowVisible: false,
+              headerTitleStyle: {
+                color: '#1A1A1B',
+                fontFamily: 'Pretendard-Bold',
+                fontSize: 14,
+              },
+              headerLeft: () => null,
+              headerBackVisible: false,
+            }}
+          />
+          <Stack.Screen
+            name="ContentDetail"
+            component={ContentDetail}
+            options={{
+              headerShown: true,
+              headerTitle: '콘텐츠',
+              headerTitleAlign: 'center',
+              headerShadowVisible: false,
+              headerTitleStyle: {
+                color: '#1A1A1B',
+                fontFamily: 'Pretendard-Bold',
+                fontSize: 14,
+              },
+              headerLeft: () => null,
+              headerBackVisible: false,
+            }}
+          />
+          <Stack.Screen
+            name="MyPage"
+            component={MyPage}
+            options={{
+              headerShown: true,
+              headerTitle: '마이페이지',
+              headerTitleAlign: 'center',
+              headerShadowVisible: false,
+              headerTitleStyle: {
+                color: '#1A1A1B',
+                fontFamily: 'Pretendard-Bold',
+                fontSize: 14,
+              },
+              headerLeft: () => null,
+              headerBackVisible: false,
+            }}
+          />
+          <Stack.Screen
+            name="ProfileEdit"
+            component={ProfileEdit}
+            options={({navigation}) => ({
+              headerShown: true,
+              headerTitle: '프로필 수정',
+              headerTitleAlign: 'center',
+              headerShadowVisible: false,
+              headerTitleStyle: {
+                color: '#1A1A1B',
+                fontFamily: 'Pretendard-Bold',
+                fontSize: 14,
+                fontStyle: 'normal',
+                lineHeight: 21,
+                textAlign: 'center',
+              },
+              headerLeft: () => (
+                <TouchableOpacity onPress={() => navigation.goBack()}>
+                  <BackIcon />
+                </TouchableOpacity>
+              ),
+            })}
+          />
+          <Stack.Screen
+            name="MyReview"
+            component={MyReview}
+            options={({navigation}) => ({
+              headerShown: true,
+              headerTitle: '내 리뷰',
+              headerTitleAlign: 'center',
+              headerShadowVisible: false,
+              headerTitleStyle: {
+                color: '#1A1A1B',
+                fontFamily: 'Pretendard-Bold',
+                fontSize: 14,
+                fontStyle: 'normal',
+                lineHeight: 21,
+                textAlign: 'center',
+              },
+              headerLeft: () => (
+                <TouchableOpacity onPress={() => navigation.goBack()}>
+                  <BackIcon />
+                </TouchableOpacity>
+              ),
+            })}
           />
         </Stack.Navigator>
       </NavigationContainer>
