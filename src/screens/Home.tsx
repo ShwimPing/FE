@@ -32,7 +32,7 @@ const Home = () => {
     longitude: 126.978,
     zoom: 10,
   });
-  const [selectedCategory, setSelectedCategory] = useState('전체'); // 선택된 카테고리 상태
+  const [selectedCategory, setSelectedCategory] = useState('전체');
 
   useEffect(() => {
     const requestLocationPermission = async () => {
@@ -53,14 +53,15 @@ const Home = () => {
     const getCurrentLocation = () => {
       Geolocation.getCurrentPosition(
         position => {
+          const {latitude, longitude} = position.coords;
           setLocation({
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
+            latitude,
+            longitude,
             zoom: 16,
           });
           mapViewRef.current?.animateToCoordinate({
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
+            latitude,
+            longitude,
           });
         },
         error => {
@@ -80,15 +81,16 @@ const Home = () => {
   const moveToCurrentLocation = () => {
     Geolocation.getCurrentPosition(
       position => {
+        const {latitude, longitude} = position.coords;
         setLocation({
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
+          latitude,
+          longitude,
           zoom: 16,
         });
 
         mapViewRef.current?.animateToCoordinate({
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
+          latitude,
+          longitude,
         });
       },
       error => {
@@ -151,8 +153,7 @@ const Home = () => {
               styles.categoryButton,
               selectedCategory === category && styles.selectedCategoryButton,
             ]}
-            onPress={() => setSelectedCategory(category)}
-          >
+            onPress={() => setSelectedCategory(category)}>
             <Text
               style={[
                 styles.categoryText,
@@ -173,14 +174,18 @@ const Home = () => {
             longitude: location.longitude,
             zoom: location.zoom,
           }}
+          // @ts-ignore: Suppress TS error for children
+          children={
+            <Marker
+              coordinate={{
+                latitude: location.latitude,
+                longitude: location.longitude,
+              }}
+              pinColor="blue"
+            />
+          }
         />
-        <Marker
-          coordinate={{
-            latitude: location.latitude,
-            longitude: location.longitude,
-          }}
-          pinColor="blue"
-        />
+
         <View style={styles.buttonContainer}>
           <TouchableOpacity style={styles.button}>
             <Svg width="20" height="20" viewBox="0 0 20 20" fill="none">
