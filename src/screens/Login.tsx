@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   Image,
+  Alert,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../App';
@@ -13,6 +14,40 @@ import { RootStackParamList } from '../App';
 type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
 
 const Login: React.FC<Props> = ({ navigation }) => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert('이메일과 비밀번호를 입력해 주세요.');
+      return;
+    }
+
+    try {
+      const response = await fetch('http://211.188.51.4/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.isSuccess) {
+        navigation.navigate('Home');
+      } else {
+        Alert.alert('로그인 실패', data.message || '로그인에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('Error during login:', error);
+      Alert.alert('로그인 오류', '로그인 중 오류가 발생했습니다. 다시 시도해 주세요.');
+    }
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.logoContainer}>
@@ -23,15 +58,21 @@ const Login: React.FC<Props> = ({ navigation }) => {
         style={styles.input}
         placeholder="이메일을 입력해 주세요."
         placeholderTextColor="#8E9398"
+        value={email}
+        onChangeText={setEmail}
+        keyboardType="email-address"
+        autoCapitalize="none"
       />
       <TextInput
         style={styles.input}
         placeholder="비밀번호를 입력해 주세요."
         placeholderTextColor="#8E9398"
         secureTextEntry
+        value={password}
+        onChangeText={setPassword}
       />
 
-      <TouchableOpacity style={styles.loginButton}>
+      <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
         <Text style={styles.loginButtonText}>로그인</Text>
       </TouchableOpacity>
 

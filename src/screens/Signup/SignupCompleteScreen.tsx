@@ -1,12 +1,30 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import Svg, { Path, Defs, LinearGradient, Stop } from 'react-native-svg';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { RootStackParamList } from '../../App';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'SignUpComplete'>;
 
 const SignUpCompleteScreen: React.FC<Props> = ({ navigation }) => {
+  const [nickname, setNickname] = useState('');
+
+  useEffect(() => {
+    const fetchNickname = async () => {
+      try {
+        const storedNickname = await AsyncStorage.getItem('userNickname');
+        if (storedNickname) {
+          setNickname(storedNickname);
+        }
+      } catch (error) {
+        console.error('Failed to load nickname:', error);
+      }
+    };
+
+    fetchNickname();
+  }, []);
+
   return (
     <View style={styles.container}>
       <Svg width="101" height="100" viewBox="0 0 101 100" fill="none">
@@ -36,7 +54,7 @@ const SignUpCompleteScreen: React.FC<Props> = ({ navigation }) => {
       </Svg>
 
       <Text style={styles.message}>
-        헴깅이22 님,{'\n'}회원가입이 완료되었습니다!
+        {nickname} 님,{'\n'}회원가입이 완료되었습니다!
       </Text>
 
       <TouchableOpacity
@@ -52,7 +70,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     alignItems: 'center',
-    paddingTop:167,
+    paddingTop: 167,
     backgroundColor: '#FFF',
   },
   message: {
@@ -75,7 +93,7 @@ const styles = StyleSheet.create({
   },
   startButtonText: {
     fontSize: 14,
-    lineHeight:21,
+    lineHeight: 21,
     fontFamily: 'Pretendard-Bold',
     color: '#FFF',
   },
