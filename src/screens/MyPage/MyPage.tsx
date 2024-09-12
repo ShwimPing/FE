@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   View,
   Text,
@@ -7,11 +7,14 @@ import {
   TouchableOpacity,
   ScrollView,
   Switch,
+  Alert,
 } from 'react-native';
 import Svg, {Path, G, Defs, ClipPath, Rect} from 'react-native-svg';
 import {useNavigation} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {RootStackParamList} from '../../App';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
 import Footer from '../../components/Footer';
 
 type MyPageNavigationProp = NativeStackNavigationProp<
@@ -21,9 +24,74 @@ type MyPageNavigationProp = NativeStackNavigationProp<
 
 const MyPage = () => {
   const navigation = useNavigation<MyPageNavigationProp>();
-  const [isPushEnabled, setIsPushEnabled] = React.useState(false);
+  const [isPushEnabled, setIsPushEnabled] = useState(false);
+  const [nickname, setNickname] = useState('');
+
+  useEffect(() => {
+    const fetchNickname = async () => {
+      try {
+        const storedNickname = await AsyncStorage.getItem('userNickname');
+        if (storedNickname) {
+          setNickname(storedNickname);
+        }
+      } catch (error) {
+        console.error('Failed to load nickname:', error);
+      }
+    };
+
+    fetchNickname();
+  }, []);
 
   const toggleSwitch = () => setIsPushEnabled(previousState => !previousState);
+
+  const handleWithdrawal = () => {
+    Alert.alert(
+      '회원탈퇴',
+      '정말로 탈퇴하시겠습니까?',
+      [
+        {text: '취소', style: 'cancel'},
+        {
+          text: '확인',
+          onPress: async () => {
+            try {
+              const response = await axios.delete(
+                'http://211.188.51.4/auth/withdraw',
+                {
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                },
+              );
+
+              if (response.data.isSuccess) {
+                navigation.navigate('Login');
+              } else {
+                Alert.alert(
+                  '탈퇴 실패',
+                  response.data.message || '탈퇴에 실패했습니다.',
+                );
+              }
+            } catch (error) {
+              if (axios.isAxiosError(error)) {
+                console.error(
+                  'Axios error:',
+                  error.response?.data || error.message,
+                );
+                Alert.alert(
+                  '오류',
+                  '탈퇴 중 오류가 발생했습니다. 다시 시도해 주세요.',
+                );
+              } else {
+                console.error('Unexpected error:', error);
+                Alert.alert('오류', '알 수 없는 오류가 발생했습니다.');
+              }
+            }
+          },
+        },
+      ],
+      {cancelable: false},
+    );
+  };
 
   return (
     <View style={styles.pageContainer}>
@@ -34,7 +102,7 @@ const MyPage = () => {
             style={styles.profileImage}
           />
           <View style={styles.nicknameSection}>
-            <Text style={styles.nickname}>햄깅이22</Text>
+            <Text style={styles.nickname}>{nickname}</Text>
             <TouchableOpacity
               onPress={() => navigation.navigate('ProfileEdit')}>
               <Svg width="24" height="25" viewBox="0 0 24 25" fill="none">
@@ -96,7 +164,9 @@ const MyPage = () => {
           <Text style={styles.versionNumber}>1.0.0</Text>
         </View>
         <View style={styles.withdrawalSection}>
-          <TouchableOpacity style={styles.withdrawalButton}>
+          <TouchableOpacity
+            style={styles.withdrawalButton}
+            onPress={handleWithdrawal}>
             <Text style={styles.withdrawalText}>회원탈퇴</Text>
             <Svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <G clipPath="url(#clip0_287_1824)">
