@@ -1,5 +1,5 @@
 /* eslint-disable react-native/no-inline-styles */
-import React, {useState} from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -7,25 +7,47 @@ import {
   StyleSheet,
   TouchableOpacity,
   Image,
+  Alert,
 } from 'react-native';
-import {NativeStackScreenProps} from '@react-navigation/native-stack';
-import Svg, {Path, G, ClipPath, Rect, Defs} from 'react-native-svg';
-import {RootStackParamList} from '../../App';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import Svg, { Path, G, ClipPath, Rect, Defs } from 'react-native-svg';
+import { RootStackParamList } from '../../App';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Profile'>;
 
-const ProfileScreen: React.FC<Props> = ({navigation}) => {
+const ProfileScreen: React.FC<Props> = ({ navigation }) => {
   const [nickname, setNickname] = useState('');
-  const [isNicknameValid, setIsNicknameValid] = useState(true);
+  const [isNicknameValid, setIsNicknameValid] = useState(false);
   const [nicknameMessage, setNicknameMessage] = useState('');
 
-  const handleCheckNickname = () => {
-    if (nickname === '헴깅이22') {
-      setIsNicknameValid(true);
-      setNicknameMessage('사용 가능한 닉네임입니다!');
-    } else {
-      setIsNicknameValid(false);
-      setNicknameMessage('이미 사용 중인 닉네임입니다.');
+  const handleCheckNickname = async () => {
+    if (nickname.trim() === '') {
+      Alert.alert('닉네임을 입력해 주세요.');
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `http://211.188.51.4/auth/nickname/validation?nickname=${encodeURIComponent(
+          nickname,
+        )}`,
+        {
+          method: 'GET',
+        },
+      );
+      const data = await response.json();
+
+      if (data.isSuccess) {
+        setIsNicknameValid(true);
+        setNicknameMessage('사용 가능한 닉네임입니다!');
+      } else {
+        setIsNicknameValid(false);
+        setNicknameMessage('이미 사용 중인 닉네임입니다.');
+      }
+    } catch (error) {
+      console.error('Error checking nickname:', error);
+      Alert.alert('닉네임 확인 중 오류가 발생했습니다.');
     }
   };
 
@@ -33,7 +55,46 @@ const ProfileScreen: React.FC<Props> = ({navigation}) => {
     setNickname(text);
     if (text === '') {
       setNicknameMessage('');
-      setIsNicknameValid(true);
+      setIsNicknameValid(false);
+    }
+  };
+
+  const handleSignUp = async () => {
+    try {
+      const email = await AsyncStorage.getItem('userEmail');
+      const password = await AsyncStorage.getItem('userPassword');
+
+      if (!email || !password) {
+        Alert.alert('이메일 또는 비밀번호를 찾을 수 없습니다.');
+        return;
+      }
+
+      await AsyncStorage.setItem('userNickname', nickname);
+
+
+      const response = await fetch('http://211.188.51.4/auth/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          password,
+          nickname,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.isSuccess) {
+        // Alert.alert('회원가입이 완료되었습니다.');
+        navigation.navigate('SignUpComplete');
+      } else {
+        Alert.alert(`회원가입 실패: ${data.message}`);
+      }
+    } catch (error) {
+      console.error('Error during signup:', error);
+      // Alert.alert('회원가입 중 오류가 발생했습니다.');
     }
   };
 
@@ -116,7 +177,7 @@ const ProfileScreen: React.FC<Props> = ({navigation}) => {
           <Text
             style={[
               styles.nicknameMessage,
-              {color: isNicknameValid ? '#8E9398' : '#FF5252'},
+              { color: isNicknameValid ? '#8E9398' : '#FF5252' },
             ]}>
             {nicknameMessage}
           </Text>
@@ -124,9 +185,16 @@ const ProfileScreen: React.FC<Props> = ({navigation}) => {
       </View>
 
       <TouchableOpacity
-        style={styles.nextButton}
-        onPress={() => navigation.navigate('SignUpComplete')}>
-        <Text style={styles.nextButtonText}>다음</Text>
+        style={[styles.nextButton, isNicknameValid && styles.nextButtonActive]}
+        onPress={handleSignUp}
+        disabled={!isNicknameValid}>
+        <Text
+          style={[
+            styles.nextButtonText,
+            isNicknameValid && styles.nextButtonTextActive,
+          ]}>
+          다음
+        </Text>
       </TouchableOpacity>
     </View>
   );
@@ -233,10 +301,16 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 57,
   },
+  nextButtonActive: {
+    backgroundColor: '#222',
+  },
   nextButtonText: {
     fontSize: 14,
     fontFamily: 'Pretendard-Bold',
     color: '#D2D3D3',
+  },
+  nextButtonTextActive: {
+    color: '#FFF',
   },
 });
 
