@@ -1,4 +1,5 @@
-import React, {useEffect, useRef, useState} from 'react';
+// @ts-nocheck
+import React, {useEffect, useRef, useState, useCallback} from 'react';
 import {
   View,
   TextInput,
@@ -10,20 +11,26 @@ import {
   ScrollView,
   Text,
   Modal,
+  TouchableWithoutFeedback,
 } from 'react-native';
-import Svg, { Path, G, Defs, ClipPath, Rect } from 'react-native-svg';
+import Svg, {Path, G, Defs, ClipPath, Rect} from 'react-native-svg';
 import Footer from '../components/Footer';
 import NaverMapView, {Marker} from 'react-native-nmap';
 import Geolocation from 'react-native-geolocation-service';
+import axios from 'axios';
+
+interface Shelter {
+  latitude: number;
+  longitude: number;
+  name?: string;
+}
 
 const categories = [
-  '전체',
-  '기후동행쉼터',
-  '무더위쉼터',
-  '도서관쉼터',
-  '한파쉼터',
-  '지하철역쉼터',
-  '스마트쉼터',
+  {label: '전체', value: 'TOGETHER'},
+  {label: '무더위쉼터', value: 'HOT'},
+  {label: '도서관쉼터', value: 'LIBRARY'},
+  {label: '한파쉼터', value: 'COLD'},
+  {label: '스마트쉼터', value: 'SMART'},
 ];
 
 const Home = () => {
@@ -35,6 +42,42 @@ const Home = () => {
   });
   const [selectedCategory, setSelectedCategory] = useState('전체');
   const [showVoiceRecognition, setShowVoiceRecognition] = useState(false);
+  const [markers, setMarkers] = useState<Shelter[]>([]);
+  const [region, setRegion] = useState('');
+
+  // region 구하기
+  const getRegionFromCoordinates = async (
+    latitude: number,
+    longitude: number,
+  ) => {
+    try {
+      const response = await axios.get(
+        'https://nominatim.openstreetmap.org/reverse',
+        {
+          params: {
+            lat: latitude,
+            lon: longitude,
+            format: 'json',
+          },
+        },
+      );
+
+      const address = response.data.address;
+
+      const fetchedRegion =
+        address.borough || address.city_district || address.county || '';
+
+      if (fetchedRegion) {
+        setRegion(fetchedRegion);
+      } else {
+        console.error('구 정보를 찾을 수 없습니다.', response.data);
+        setRegion('');
+      }
+    } catch (error) {
+      console.error('Error fetching region:', error);
+      setRegion('');
+    }
+  };
 
   useEffect(() => {
     const requestLocationPermission = async () => {
@@ -52,6 +95,7 @@ const Home = () => {
       }
     };
 
+    // 현위치
     const getCurrentLocation = () => {
       Geolocation.getCurrentPosition(
         position => {
@@ -65,6 +109,7 @@ const Home = () => {
             latitude,
             longitude,
           });
+          getRegionFromCoordinates(latitude, longitude); // 현재 위치를 기반으로 구 정보 가져오기
         },
         error => {
           console.log('Error getting location: ', error);
@@ -94,6 +139,7 @@ const Home = () => {
           latitude,
           longitude,
         });
+        getRegionFromCoordinates(latitude, longitude); // 이동 후에도 구 정보 업데이트
       },
       error => {
         console.log('Error getting location: ', error);
@@ -106,11 +152,64 @@ const Home = () => {
     );
   };
 
+  const handleCategorySelect = (category: string) => {
+    setSelectedCategory(category);
+  };
+
+  const fetchPlaces = useCallback(async () => {
+    const categoryValue =
+      categories.find(c => c.label === selectedCategory)?.value || 'TOGETHER';
+
+    console.log('Fetching places with params:', {
+      longitude: location.longitude,
+      latitude: location.latitude,
+      radius: 5000,
+      category: categoryValue,
+      region,
+    });
+
+    if (!region) {
+      console.warn('구 정보가 없습니다. API 요청을 중단합니다.');
+      return;
+    }
+
+    try {
+      const response = await axios.get('http://211.188.51.4/places/nearby', {
+        params: {
+          longitude: location.longitude,
+          latitude: location.latitude,
+          radius: 5000,
+          category: categoryValue,
+          region,
+        },
+      });
+
+      const data = response.data;
+      if (data.isSuccess && Array.isArray(data.results.placeList)) {
+        setMarkers(data.results.placeList);
+      } else {
+        console.error('Invalid data format:', data);
+        setMarkers([]);
+      }
+    } catch (error) {
+      console.error('Error fetching places:', error);
+      setMarkers([]);
+    }
+  }, [location, selectedCategory, region]);
+
+  useEffect(() => {
+    if (selectedCategory !== '전체') {
+      fetchPlaces();
+    } else {
+      setMarkers([]);
+    }
+  }, [fetchPlaces, selectedCategory]);
+
   return (
     <View style={styles.container}>
       <View style={styles.searchContainer}>
         <View style={styles.searchBox}>
-        <Svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <Svg width="16" height="16" viewBox="0 0 16 16" fill="none">
             <G clipPath="url(#clip0_305_1339)">
               <Path
                 fillRule="evenodd"
@@ -161,29 +260,32 @@ const Home = () => {
         visible={showVoiceRecognition}
         animationType="slide"
         onRequestClose={() => setShowVoiceRecognition(false)}>
-        <View style={styles.overlay}>
-          <View style={styles.voiceRecognitionContainer}>
-            <Text style={styles.voiceRecognitionText}>
-              음성 인식으로 원하는 쉼터를 찾아보세요
-            </Text>
-            <View style={styles.voiceRecognitionInner}>
-              <Text style={styles.voiceRecognitionPrompt}>
-                "제일 가까운 쉼터 찾아줘"
+        <TouchableWithoutFeedback
+          onPress={() => setShowVoiceRecognition(false)}>
+          <View style={styles.overlay}>
+            <View style={styles.voiceRecognitionContainer}>
+              <Text style={styles.voiceRecognitionText}>
+                음성 인식으로 원하는 쉼터를 찾아보세요
               </Text>
+              <View style={styles.voiceRecognitionInner}>
+                <Text style={styles.voiceRecognitionPrompt}>
+                  "제일 가까운 쉼터 찾아줘"
+                </Text>
+              </View>
+              <TouchableOpacity style={styles.microphoneButton}>
+                <Svg width="27" height="37" viewBox="0 0 27 37" fill="none">
+                  <Path
+                    d="M25.1667 15.2918V18.6252C25.1667 25.0685 19.9434 30.2918 13.5 30.2918M1.83337 15.2918V18.6252C1.83337 25.0685 7.05672 30.2918 13.5 30.2918M13.5 30.2918V35.2918M6.83337 35.2918H20.1667M13.5 23.6252C10.7386 23.6252 8.50004 21.3866 8.50004 18.6252V6.9585C8.50004 4.19707 10.7386 1.9585 13.5 1.9585C16.2615 1.9585 18.5 4.19707 18.5 6.9585V18.6252C18.5 21.3866 16.2615 23.6252 13.5 23.6252Z"
+                    stroke="#1A1A1B"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </Svg>
+              </TouchableOpacity>
             </View>
-            <TouchableOpacity style={styles.microphoneButton}>
-              <Svg width="27" height="37" viewBox="0 0 27 37" fill="none">
-                <Path
-                  d="M25.1667 15.2918V18.6252C25.1667 25.0685 19.9434 30.2918 13.5 30.2918M1.83337 15.2918V18.6252C1.83337 25.0685 7.05672 30.2918 13.5 30.2918M13.5 30.2918V35.2918M6.83337 35.2918H20.1667M13.5 23.6252C10.7386 23.6252 8.50004 21.3866 8.50004 18.6252V6.9585C8.50004 4.19707 10.7386 1.9585 13.5 1.9585C16.2615 1.9585 18.5 4.19707 18.5 6.9585V18.6252C18.5 21.3866 16.2615 23.6252 13.5 23.6252Z"
-                  stroke="#1A1A1B"
-                  stroke-width="2.5"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </Svg>
-            </TouchableOpacity>
           </View>
-        </View>
+        </TouchableWithoutFeedback>
       </Modal>
 
       <ScrollView
@@ -195,15 +297,17 @@ const Home = () => {
             key={index}
             style={[
               styles.categoryButton,
-              selectedCategory === category && styles.selectedCategoryButton,
+              selectedCategory === category.label &&
+                styles.selectedCategoryButton,
             ]}
-            onPress={() => setSelectedCategory(category)}>
+            onPress={() => handleCategorySelect(category.label)}>
             <Text
               style={[
                 styles.categoryText,
-                selectedCategory === category && styles.selectedCategoryText,
+                selectedCategory === category.label &&
+                  styles.selectedCategoryText,
               ]}>
-              {category}
+              {category.label}
             </Text>
           </TouchableOpacity>
         ))}
@@ -218,17 +322,20 @@ const Home = () => {
             longitude: location.longitude,
             zoom: location.zoom,
           }}
-          // @ts-ignore: Suppress TS error for children
-          children={
-            <Marker
-              coordinate={{
-                latitude: location.latitude,
-                longitude: location.longitude,
-              }}
-              pinColor="blue"
-            />
-          }
-        />
+          // @ts-ignore
+          >
+          {Array.isArray(markers) &&
+            markers.map((marker, index) => (
+              <Marker
+                key={index}
+                coordinate={{
+                  latitude: marker.latitude,
+                  longitude: marker.longitude,
+                }}
+                pinColor="blue"
+              />
+            ))}
+        </NaverMapView>
 
         <View style={styles.buttonContainer}>
           <TouchableOpacity style={styles.button}>
