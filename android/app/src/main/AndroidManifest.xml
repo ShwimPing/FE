@@ -35,7 +35,7 @@
             <category android:name="android.intent.category.BROWSABLE" />
 
             <data
-                android:scheme="naverXQ774qjn0QvrLziS0efY"
+                android:scheme="naverxq774qjn0qvrlzis0efy"
                 android:host="auth" />
         </intent-filter>
       </activity>
