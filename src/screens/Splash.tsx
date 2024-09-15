@@ -1,17 +1,64 @@
-import React from 'react';
-import {View, Text, TouchableOpacity, StyleSheet} from 'react-native';
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import React, {useEffect, useState} from 'react';
+import {View, Text, TouchableOpacity, StyleSheet, Alert} from 'react-native';
 import Svg, {Path, G, ClipPath, Defs, Rect} from 'react-native-svg';
-import {useNavigation} from '@react-navigation/native'; // useNavigation 훅 추가
+import {useNavigation} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {RootStackParamList} from '../App';
+import NaverLogin, {NaverLoginResponse} from '@react-native-seoul/naver-login';
+import axios from 'axios';
 
 type SplashScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
   'Splash'
 >;
 
+const consumerKey = 'XQ774qjn0QvrLziS0efY';
+const consumerSecret = '6OIm7uvnU6';
+const appName = 'ShwimPing';
+
 const Splash = () => {
-  const navigation = useNavigation<SplashScreenNavigationProp>(); // 네비게이션 타입 지정
+  const navigation = useNavigation<SplashScreenNavigationProp>();
+
+  useEffect(() => {
+    NaverLogin.initialize({
+      appName,
+      consumerKey,
+      consumerSecret,
+      disableNaverAppAuthIOS: true,
+    });
+  }, []);
+
+  const loginWithNaver = async () => {
+    try {
+      const {successResponse, failureResponse} = await NaverLogin.login();
+
+      if (successResponse) {
+        const authCode = successResponse.accessToken;
+        Alert.alert('로그인 성공', `액세스 토큰: ${authCode}`);
+        await postToBackend(authCode);
+        navigation.navigate('Home');
+      } else if (failureResponse) {
+        Alert.alert('로그인 실패', failureResponse.message);
+      }
+    } catch (error) {
+      console.error('네이버 로그인 에러:', error);
+    }
+  };
+
+  const postToBackend = async (authCode: string) => {
+    try {
+      const response = await axios.post(
+        'http://211.188.51.4/auth/login/naver',
+        {
+          authCode,
+        },
+      );
+      console.log('서버 응답:', response.data);
+    } catch (error) {
+      console.error('백엔드 전송 에러:', error);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -19,7 +66,7 @@ const Splash = () => {
         <Text style={styles.logoText}>LOGO</Text>
       </View>
 
-      <TouchableOpacity style={styles.naverButton}>
+      <TouchableOpacity style={styles.naverButton} onPress={loginWithNaver}>
         <Svg width="17" height="16" viewBox="0 0 17 16" fill="none">
           <G clipPath="url(#clip0_241_1067)">
             <Path
