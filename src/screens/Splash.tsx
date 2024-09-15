@@ -1,11 +1,12 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import React, {useEffect, useState} from 'react';
+import React, {useEffect} from 'react';
 import {View, Text, TouchableOpacity, StyleSheet, Alert} from 'react-native';
 import Svg, {Path, G, ClipPath, Defs, Rect} from 'react-native-svg';
 import {useNavigation} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {RootStackParamList} from '../App';
-import NaverLogin, {NaverLoginResponse} from '@react-native-seoul/naver-login';
+import NaverLogin from '@react-native-seoul/naver-login';
+import {KakaoOAuthToken, login as kakaoLogin} from '@react-native-seoul/kakao-login';
 import axios from 'axios';
 
 type SplashScreenNavigationProp = NativeStackNavigationProp<
@@ -36,7 +37,7 @@ const Splash = () => {
       if (successResponse) {
         const authCode = successResponse.accessToken;
         Alert.alert('로그인 성공', `액세스 토큰: ${authCode}`);
-        await postToBackend(authCode);
+        await postToBackend(authCode, 'NAVER');
         navigation.navigate('Home');
       } else if (failureResponse) {
         Alert.alert('로그인 실패', failureResponse.message);
@@ -46,17 +47,34 @@ const Splash = () => {
     }
   };
 
-  const postToBackend = async (authCode: string) => {
+  const loginWithKakao = async () => {
     try {
-      const response = await axios.post(
-        'http://211.188.51.4/auth/login/naver',
-        {
-          authCode,
-        },
-      );
+      const token: KakaoOAuthToken = await kakaoLogin();
+      const authCode = token.accessToken;
+      Alert.alert('로그인 성공', `액세스 토큰: ${authCode}`);
+      await postToBackend(authCode, 'KAKAO');
+      navigation.navigate('Home');
+    } catch (error) {
+      console.error('카카오 로그인 에러:', error);
+      Alert.alert('로그인 실패', '카카오 로그인에 실패했습니다.');
+    }
+  };
+
+  const postToBackend = async (authCode: string, provider: string) => {
+    try {
+      const endpoint =
+        provider === 'KAKAO'
+          ? 'http://211.188.51.4/auth/login/KAKAO'
+          : 'http://211.188.51.4/auth/login/NAVER';
+
+      const response = await axios.post(endpoint, {
+        authCode,
+      });
+
       console.log('서버 응답:', response.data);
     } catch (error) {
       console.error('백엔드 전송 에러:', error);
+      Alert.alert('에러', '서버와의 통신에 실패했습니다.');
     }
   };
 
@@ -88,7 +106,7 @@ const Splash = () => {
         <Text style={styles.naverButtonText}>네이버로 시작하기</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.kakaoButton}>
+      <TouchableOpacity style={styles.kakaoButton} onPress={loginWithKakao}>
         <Svg width="19" height="18" viewBox="0 0 19 18" fill="none">
           <G clipPath="url(#clip0_241_496)">
             <Path
