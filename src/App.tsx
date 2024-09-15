@@ -1,5 +1,5 @@
 /* eslint-disable react/no-unstable-nested-components */
-import React from 'react';
+import React, {useEffect} from 'react';
 import {NavigationContainer} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import {enableScreens} from 'react-native-screens';
@@ -17,6 +17,11 @@ import ContentDetail from './screens/ContentDetail';
 import MyPage from './screens/MyPage/MyPage';
 import ProfileEdit from './screens/MyPage/ProfileEdit';
 import MyReview from './screens/MyPage/MyReview';
+import NaverLogin from '@react-native-seoul/naver-login';
+
+const consumerKey = 'XQ774qjn0QvrLziS0efY';
+const consumerSecret = '6OIm7uvnU6';
+const appName = 'ShwimPing';
 
 enableScreens();
 
@@ -50,6 +55,19 @@ const BackIcon = () => (
 );
 
 const App: React.FC = () => {
+  useEffect(() => {
+    try {
+      NaverLogin.initialize({
+        appName,
+        consumerKey,
+        consumerSecret,
+        disableNaverAppAuthIOS: true,
+      });
+      console.log('Naver Login initialized successfully');
+    } catch (error) {
+      console.error('Naver Login initialization failed:', error);
+    }
+  }, []);
   return (
     <SafeAreaView style={styles.container}>
       <NavigationContainer>

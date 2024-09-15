@@ -61,5 +61,10 @@
 	<!-- 네이버 지도 클라이언트 ID 추가 -->
   <key>NMFClientId</key>
   <string>0hsynm0y56</string>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+  <string>naversearchapp</string>
+  <string>naversearchthirdlogin</string>
+	</array>
 </dict>
 </plist>
