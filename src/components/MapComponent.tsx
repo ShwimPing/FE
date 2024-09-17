@@ -1,21 +1,27 @@
-import React, {useRef, useEffect, useState} from 'react';
+/* eslint-disable react-native/no-inline-styles */
+import React, { useRef, useEffect, useState } from 'react';
 import {
   View,
   StyleSheet,
-  Image,
   Alert,
   TouchableOpacity,
   PermissionsAndroid,
   Platform,
   Text,
   ScrollView,
+  Image,
 } from 'react-native';
-import NaverMapView from 'react-native-nmap';
+import NaverMapView, { Marker } from 'react-native-nmap';
 import Geolocation from 'react-native-geolocation-service';
+
+const SEOUL_COORD = {
+  latitude: 37.5665,
+  longitude: 126.9780,
+};
 
 const initialCamera = {
   latitude: 37.5665,
-  longitude: 126.978,
+  longitude: 126.9780,
   zoom: 16,
   tilt: 0,
   bearing: 0,
@@ -30,13 +36,27 @@ const categories = [
 ];
 
 const MapComponent = () => {
-  const mapViewRef = useRef<any>(null);
+  const mapViewRef = useRef<NaverMapView>(null);
   const [camera, setCamera] = useState(initialCamera);
+  const [currentLocation, setCurrentLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>('전체');
 
   useEffect(() => {
-    requestLocationPermission();
+    const initializeLocation = async () => {
+      const permissionGranted = await requestLocationPermission();
+      if (permissionGranted) {
+        moveToCurrentLocation();
+      } else {
+        setCamera(initialCamera);
+        mapViewRef.current?.animateToCoordinate({
+          latitude: SEOUL_COORD.latitude,
+          longitude: SEOUL_COORD.longitude,
+        });
+      }
+    };
+
+    initializeLocation();
   }, []);
 
   const requestLocationPermission = async () => {
@@ -45,58 +65,56 @@ const MapComponent = () => {
         const granted = await PermissionsAndroid.request(
           PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
         );
-        if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+        if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+          return true;
+        } else {
           Alert.alert('위치 권한이 필요합니다.');
+          return false;
         }
       } catch (err) {
         console.warn(err);
+        return false;
       }
     }
+    return true;
   };
 
   const moveToCurrentLocation = () => {
     Geolocation.getCurrentPosition(
-      position => {
-        const {latitude, longitude} = position.coords;
+      (position) => {
+        const { latitude, longitude } = position.coords;
 
-        console.log('Current position:', {latitude, longitude});
-
-        if (
-          latitude < -90 ||
-          latitude > 90 ||
-          longitude < -180 ||
-          longitude > 180
-        ) {
-          Alert.alert('잘못된 위치 정보가 감지되었습니다. 다시 시도해 주세요.');
-          return;
-        }
+        const validLatitude = Math.abs(latitude - SEOUL_COORD.latitude) > 1 ? SEOUL_COORD.latitude : latitude;
+        const validLongitude = Math.abs(longitude - SEOUL_COORD.longitude) > 1 ? SEOUL_COORD.longitude : longitude;
 
         mapViewRef.current?.animateToCoordinate({
-          latitude,
-          longitude,
-          zoom: 16,
-          tilt: 0,
-          bearing: 0,
-          duration: 1000,
-          easing: 'Linear',
+          latitude: validLatitude,
+          longitude: validLongitude,
         });
 
         setCamera({
-          latitude,
-          longitude,
+          latitude: validLatitude,
+          longitude: validLongitude,
           zoom: 16,
           tilt: 0,
           bearing: 0,
         });
+
+        setCurrentLocation({ latitude: validLatitude, longitude: validLongitude });
         setLocationError(null);
       },
-      error => {
+      (error) => {
         console.error('Error getting location:', error);
         setLocationError(
           '위치를 가져올 수 없습니다. 위치 서비스가 활성화되어 있는지 확인해주세요.',
         );
+        setCamera(initialCamera);
+        mapViewRef.current?.animateToCoordinate({
+          latitude: SEOUL_COORD.latitude,
+          longitude: SEOUL_COORD.longitude,
+        });
       },
-      {enableHighAccuracy: true, timeout: 15000, maximumAge: 0},
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
     );
   };
 
@@ -106,12 +124,31 @@ const MapComponent = () => {
 
   return (
     <View style={styles.container}>
-      <NaverMapView ref={mapViewRef} style={styles.map} center={camera} />
+      {/* @ts-ignore: children 속성 오류 무시 */}
+      <NaverMapView
+        ref={mapViewRef}
+        style={styles.map}
+        center={{ latitude: camera.latitude, longitude: camera.longitude }}
+        zoomControl={true}
+        showsMyLocationButton={false}
+        onMapClick={(e) => console.warn('onMapClick', JSON.stringify(e))}
+        scrollGesturesEnabled={true}
+      >
+        {currentLocation && (
+          <Marker
+            coordinate={currentLocation}
+            pinColor="blue"
+            onClick={() => console.warn('현재 위치 마커 클릭됨')}
+          />
+        )}
+      </NaverMapView>
+
       {locationError && (
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>{locationError}</Text>
         </View>
       )}
+
       <View style={styles.buttonContainer}>
         <TouchableOpacity onPress={moveToCurrentLocation}>
           <Image
@@ -121,6 +158,7 @@ const MapComponent = () => {
           />
         </TouchableOpacity>
       </View>
+
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -135,7 +173,6 @@ const MapComponent = () => {
             <View
               style={[
                 styles.circle,
-                // eslint-disable-next-line react-native/no-inline-styles
                 {
                   marginLeft: index === 0 ? 16 : 6,
                   borderColor:
@@ -163,7 +200,6 @@ const styles = StyleSheet.create({
     right: 24,
     bottom: 100,
     zIndex: 1,
-    elevation: 10,
   },
   locationImage: {
     width: 48,
@@ -193,7 +229,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 10,
     borderRadius: 20,
     borderWidth: 1,
     backgroundColor: '#FFF',
@@ -201,11 +236,8 @@ const styles = StyleSheet.create({
   },
   circleText: {
     color: '#1A1A1B',
-    fontFamily: 'Pretendard',
     fontSize: 12,
-    fontStyle: 'normal',
     fontWeight: '400',
-    lineHeight: 18,
   },
   scrollView: {
     position: 'absolute',
