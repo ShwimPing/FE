@@ -1,5 +1,5 @@
 /* eslint-disable react-native/no-inline-styles */
-import React, { useRef, useEffect, useState } from 'react';
+import React, {useRef, useEffect, useState, useCallback} from 'react';
 import {
   View,
   StyleSheet,
@@ -11,55 +11,47 @@ import {
   ScrollView,
   Image,
 } from 'react-native';
-import NaverMapView, { Marker } from 'react-native-nmap';
+import NaverMapView, {Marker} from 'react-native-nmap';
 import Geolocation from 'react-native-geolocation-service';
+import axios from 'axios';
+import {NAVER_CLIENT_ID, NAVER_API_KEY} from '../../config';
 
 const SEOUL_COORD = {
   latitude: 37.5665,
-  longitude: 126.9780,
+  longitude: 126.978,
 };
 
 const initialCamera = {
   latitude: 37.5665,
-  longitude: 126.9780,
+  longitude: 126.978,
   zoom: 16,
   tilt: 0,
   bearing: 0,
 };
 
 const categories = [
-  '전체',
-  '무더위쉼터',
-  '한파쉼터',
-  '도서관쉼터',
-  '스마트쉼터',
+  {label: '전체', value: 'TOGETHER'},
+  {label: '무더위쉼터', value: 'HOT'},
+  {label: '한파쉼터', value: 'COLD'},
+  {label: '도서관쉼터', value: 'LIBRARY'},
+  {label: '스마트쉼터', value: 'SMART'},
 ];
 
 const MapComponent = () => {
   const mapViewRef = useRef<NaverMapView>(null);
   const [camera, setCamera] = useState(initialCamera);
-  const [currentLocation, setCurrentLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [currentLocation, setCurrentLocation] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>('전체');
+  const [selectedCategory, setSelectedCategory] = useState<string>('TOGETHER');
+  const [district, setDistrict] = useState<string>('');
+  const [markers, setMarkers] = useState<
+    {latitude: number; longitude: number}[]
+  >([]);
 
-  useEffect(() => {
-    const initializeLocation = async () => {
-      const permissionGranted = await requestLocationPermission();
-      if (permissionGranted) {
-        moveToCurrentLocation();
-      } else {
-        setCamera(initialCamera);
-        mapViewRef.current?.animateToCoordinate({
-          latitude: SEOUL_COORD.latitude,
-          longitude: SEOUL_COORD.longitude,
-        });
-      }
-    };
-
-    initializeLocation();
-  }, []);
-
-  const requestLocationPermission = async () => {
+  const requestLocationPermission = useCallback(async () => {
     if (Platform.OS === 'android') {
       try {
         const granted = await PermissionsAndroid.request(
@@ -77,15 +69,21 @@ const MapComponent = () => {
       }
     }
     return true;
-  };
+  }, []);
 
-  const moveToCurrentLocation = () => {
+  const moveToCurrentLocation = useCallback(() => {
     Geolocation.getCurrentPosition(
-      (position) => {
-        const { latitude, longitude } = position.coords;
+      position => {
+        const {latitude, longitude} = position.coords;
 
-        const validLatitude = Math.abs(latitude - SEOUL_COORD.latitude) > 1 ? SEOUL_COORD.latitude : latitude;
-        const validLongitude = Math.abs(longitude - SEOUL_COORD.longitude) > 1 ? SEOUL_COORD.longitude : longitude;
+        const validLatitude =
+          Math.abs(latitude - SEOUL_COORD.latitude) > 1
+            ? SEOUL_COORD.latitude
+            : latitude;
+        const validLongitude =
+          Math.abs(longitude - SEOUL_COORD.longitude) > 1
+            ? SEOUL_COORD.longitude
+            : longitude;
 
         mapViewRef.current?.animateToCoordinate({
           latitude: validLatitude,
@@ -100,10 +98,15 @@ const MapComponent = () => {
           bearing: 0,
         });
 
-        setCurrentLocation({ latitude: validLatitude, longitude: validLongitude });
+        setCurrentLocation({
+          latitude: validLatitude,
+          longitude: validLongitude,
+        });
         setLocationError(null);
+
+        fetchDistrictName(validLatitude, validLongitude);
       },
-      (error) => {
+      error => {
         console.error('Error getting location:', error);
         setLocationError(
           '위치를 가져올 수 없습니다. 위치 서비스가 활성화되어 있는지 확인해주세요.',
@@ -114,12 +117,118 @@ const MapComponent = () => {
           longitude: SEOUL_COORD.longitude,
         });
       },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
+      {enableHighAccuracy: true, timeout: 15000, maximumAge: 0},
     );
+  }, [mapViewRef]);
+
+  const fetchDistrictName = async (latitude: number, longitude: number) => {
+    try {
+      const response = await axios.get(
+        'https://naveropenapi.apigw.ntruss.com/map-reversegeocode/v2/gc',
+        {
+          params: {
+            coords: `${longitude},${latitude}`,
+            orders: 'legalcode,admcode',
+            output: 'json',
+          },
+          headers: {
+            'X-NCP-APIGW-API-KEY-ID': NAVER_CLIENT_ID,
+            'X-NCP-APIGW-API-KEY': NAVER_API_KEY,
+          },
+        },
+      );
+
+      const region = response.data.results?.[0]?.region;
+      const fetchedDistrict = region?.area2?.name || '구 정보 없음';
+      setDistrict(fetchedDistrict);
+
+      fetchNearbyPlaces(latitude, longitude, fetchedDistrict, selectedCategory);
+    } catch (error) {
+      console.error('구 정보 가져오기 실패:', error);
+    }
   };
+
+  const fetchNearbyPlaces = async (
+    latitude: number,
+    longitude: number,
+    region: string,
+    category: string,
+  ) => {
+    try {
+      const response = await axios.get('http://211.188.51.4/places/nearby', {
+        params: {
+          longitude,
+          latitude,
+          radius: 1000,
+          category,
+          region,
+        },
+      });
+
+
+    // console.log('API 응답:', response.data);
+
+
+      if (response.data.isSuccess) {
+        const places = response.data.results.placeList || [];
+
+        if (Array.isArray(places)) {
+          setMarkers(places.map((place: any) => ({
+            latitude: place.latitude,
+            longitude: place.longitude,
+          })));
+        } else {
+          console.warn('Unexpected format: results is not an array.');
+          setMarkers([]);
+        }
+      } else {
+        console.warn('데이터 가져오기 실패:', response.data.message);
+      }
+    } catch (error) {
+      console.error('장소 정보 가져오기 실패:', error);
+    }
+  };
+
+  useEffect(() => {
+    const initializeLocation = async () => {
+      const permissionGranted = await requestLocationPermission();
+      if (permissionGranted) {
+        moveToCurrentLocation();
+      } else {
+        setCamera(initialCamera);
+        mapViewRef.current?.animateToCoordinate({
+          latitude: SEOUL_COORD.latitude,
+          longitude: SEOUL_COORD.longitude,
+        });
+      }
+    };
+
+    initializeLocation();
+  }, [moveToCurrentLocation, requestLocationPermission]);
+
+  useEffect(() => {
+    if (currentLocation && district) {
+      fetchNearbyPlaces(
+        currentLocation.latitude,
+        currentLocation.longitude,
+        district,
+        selectedCategory,
+      );
+    }
+  }, [currentLocation, selectedCategory, district]);
 
   const handleCategoryPress = (category: string) => {
     setSelectedCategory(category);
+  };
+
+  const handleMapClick = (event: {latitude: any; longitude: any}) => {
+    const {latitude, longitude} = event;
+
+    console.log(
+      `Clicked location: latitude=${latitude}, longitude=${longitude}`,
+    );
+
+    fetchDistrictName(latitude, longitude);
   };
 
   return (
@@ -128,12 +237,11 @@ const MapComponent = () => {
       <NaverMapView
         ref={mapViewRef}
         style={styles.map}
-        center={{ latitude: camera.latitude, longitude: camera.longitude }}
+        center={{latitude: camera.latitude, longitude: camera.longitude}}
         zoomControl={true}
         showsMyLocationButton={false}
-        onMapClick={(e) => console.warn('onMapClick', JSON.stringify(e))}
-        scrollGesturesEnabled={true}
-      >
+        onMapClick={handleMapClick}
+        scrollGesturesEnabled={true}>
         {currentLocation && (
           <Marker
             coordinate={currentLocation}
@@ -141,6 +249,16 @@ const MapComponent = () => {
             onClick={() => console.warn('현재 위치 마커 클릭됨')}
           />
         )}
+        {markers.map((marker, index) => (
+          <Marker
+            key={index}
+            coordinate={marker}
+            pinColor="yellow" // Markers for nearby places
+            onClick={() =>
+              console.warn(`마커 클릭: ${marker.latitude}, ${marker.longitude}`)
+            }
+          />
+        ))}
       </NaverMapView>
 
       {locationError && (
@@ -163,23 +281,21 @@ const MapComponent = () => {
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.circleContainer}
-        style={styles.scrollView}
-      >
+        style={styles.scrollView}>
         {categories.map((category, index) => (
           <TouchableOpacity
             key={index}
-            onPress={() => handleCategoryPress(category)}
-          >
+            onPress={() => handleCategoryPress(category.value)}>
             <View
               style={[
                 styles.circle,
                 {
                   marginLeft: index === 0 ? 16 : 6,
                   borderColor:
-                    selectedCategory === category ? '#222' : '#D2D3D3',
+                    selectedCategory === category.value ? '#222' : '#D2D3D3',
                 },
               ]}>
-              <Text style={styles.circleText}>{category}</Text>
+              <Text style={styles.circleText}>{category.label}</Text>
             </View>
           </TouchableOpacity>
         ))}
