@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useCallback} from 'react';
 import {
   View,
   TextInput,
@@ -11,10 +11,12 @@ import {
   KeyboardAvoidingView,
   Platform,
   Modal,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {RootStackParamList} from '../App';
-import Svg, {Path} from 'react-native-svg';
+import Svg, {Path, G, Defs, ClipPath, Rect} from 'react-native-svg';
+import axios from 'axios';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'SearchScreen'>;
 
@@ -26,65 +28,23 @@ const SearchScreen: React.FC<Props> = ({navigation}) => {
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState('별점순');
   const [isFilterPressed, setIsFilterPressed] = useState<string | null>(null);
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
 
-  const data = [
-    {
-      id: 1,
-      name: '상도역',
-      type: '기후동행쉼터',
-      distance: '65m',
-      rating: 4.0,
-      reviews: 11,
-      address: '서울 동작구 상도로 272',
-      hours: '12:00~18:00',
-    },
-    {
-      id: 2,
-      name: '서울역',
-      type: '무더위쉼터',
-      distance: '500m',
-      rating: 4.5,
-      reviews: 20,
-      address: '서울 중구 서울역로 16',
-      hours: '09:00~20:00',
-    },
-    {
-      id: 3,
-      name: '강남역',
-      type: '한파쉼터',
-      distance: '300m',
-      rating: 3.8,
-      reviews: 9,
-      address: '서울 강남구 강남대로 396',
-      hours: '10:00~19:00',
-    },
-    {
-      id: 4,
-      name: '신림역',
-      type: '스마트쉼터',
-      distance: '1km',
-      rating: 4.2,
-      reviews: 15,
-      address: '서울 관악구 신림로 1',
-      hours: '12:00~18:00',
-    },
-  ];
+  const categoryMap: {[key: string]: string} = {
+    전체: 'TOGETHER',
+    기후동행쉼터: 'SMART',
+    무더위쉼터: 'HOT',
+    도서관쉼터: 'LIBRARY',
+    한파쉼터: 'COLD',
+  };
 
-  const categories = [
-    '전체',
-    '기후동행쉼터',
-    '무더위쉼터',
-    '도서관쉼터',
-    '한파쉼터',
-    '스마트쉼터',
-  ];
-
-  const [recentSearches, setRecentSearches] = useState([
-    '서울',
-    '상도동',
-    '쉼터',
-    '지하철역',
-  ]);
+  const categoryMapToKorean: {[key: string]: string} = {
+    TOGETHER: '전체',
+    SMART: '기후동행쉼터',
+    HOT: '무더위쉼터',
+    LIBRARY: '도서관쉼터',
+    COLD: '한파쉼터',
+  };
 
   const categoryColors: {[key: string]: string} = {
     전체: '#F3F5F7',
@@ -95,27 +55,51 @@ const SearchScreen: React.FC<Props> = ({navigation}) => {
     한파쉼터: '#E8EAF6',
   };
 
-  const handleSearch = () => {
+  const handleSearch = useCallback(async () => {
     if (searchQuery.trim() === '') {
       setSearchActive(false);
       return;
     }
 
-    const filtered = data.filter(item => {
-      const matchesCategory =
-        selectedCategory === '전체' || item.type === selectedCategory;
-      const matchesQuery =
-        item.name.includes(searchQuery) || item.address.includes(searchQuery);
-      return matchesCategory && matchesQuery;
-    });
+    try {
+      const category = categoryMap[selectedCategory];
 
-    setFilteredResults(filtered);
-    setSearchActive(true);
-  };
+      const response = await axios.get('http://211.188.51.4/places/search', {
+        params: {
+          longitude: 127.0965824,
+          latitude: 37.47153792,
+          maxDistance: 100000,
+          category,
+          sortType: selectedFilter === '별점순' ? 'STAR_DESC' : 'DISTANCE_ASC',
+          page: 0,
+          keyword: searchQuery,
+        },
+      });
+
+      console.log('API 응답 데이터:', response.data);
+
+      setFilteredResults(response.data.results.placeList);
+      setSearchActive(true);
+
+      if (!recentSearches.includes(searchQuery)) {
+        setRecentSearches(prevSearches =>
+          [searchQuery, ...prevSearches].slice(0, 5),
+        );
+      }
+    } catch (error) {
+      console.error('검색 결과 가져오기 오류:', error);
+    }
+  }, [searchQuery, selectedCategory, selectedFilter, recentSearches]);
 
   useEffect(() => {
     handleSearch();
-  }, [selectedCategory, searchQuery]);
+  }, [selectedCategory, searchQuery, handleSearch]);
+
+  const clearRecentSearch = (itemToRemove: string) => {
+    setRecentSearches(prevSearches =>
+      prevSearches.filter(item => item !== itemToRemove),
+    );
+  };
 
   const handleCategorySelect = (category: string) => {
     setSelectedCategory(category);
@@ -171,7 +155,7 @@ const SearchScreen: React.FC<Props> = ({navigation}) => {
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.categoryContainer}>
-              {categories.map(category => (
+              {Object.keys(categoryMap).map(category => (
                 <TouchableOpacity
                   key={category}
                   onPress={() => handleCategorySelect(category)}
@@ -220,51 +204,55 @@ const SearchScreen: React.FC<Props> = ({navigation}) => {
             transparent={true}
             animationType="slide"
             onRequestClose={toggleFilterModal}>
-            <View style={styles.modalOverlay}>
-              <View style={styles.filterModal}>
-                <Text style={styles.filterModalTitle}>필터</Text>
+            <TouchableWithoutFeedback onPress={toggleFilterModal}>
+              <View style={styles.modalOverlay}>
+                <View style={styles.filterModal}>
+                  <Text style={styles.filterModalTitle}>필터</Text>
 
-                <TouchableOpacity
-                  style={[
-                    styles.filterOption,
-                    isFilterPressed === '별점순' && styles.selectedFilterOption,
-                  ]}
-                  onPressIn={() => setIsFilterPressed('별점순')}
-                  onPressOut={() => {
-                    setIsFilterPressed(null);
-                    handleFilterSelect('별점순');
-                  }}>
-                  <Text
+                  <TouchableOpacity
                     style={[
-                      styles.filterOptionText,
-                      selectedFilter === '별점순' &&
-                        styles.selectedFilterOptionText,
-                    ]}>
-                    별점순
-                  </Text>
-                </TouchableOpacity>
+                      styles.filterOption,
+                      isFilterPressed === '별점순' &&
+                        styles.selectedFilterOption,
+                    ]}
+                    onPressIn={() => setIsFilterPressed('별점순')}
+                    onPressOut={() => {
+                      setIsFilterPressed(null);
+                      handleFilterSelect('별점순');
+                    }}>
+                    <Text
+                      style={[
+                        styles.filterOptionText,
+                        selectedFilter === '별점순' &&
+                          styles.selectedFilterOptionText,
+                      ]}>
+                      별점순
+                    </Text>
+                  </TouchableOpacity>
 
-                <TouchableOpacity
-                  style={[
-                    styles.filterOption,
-                    isFilterPressed === '거리순' && styles.selectedFilterOption,
-                  ]}
-                  onPressIn={() => setIsFilterPressed('거리순')}
-                  onPressOut={() => {
-                    setIsFilterPressed(null);
-                    handleFilterSelect('거리순');
-                  }}>
-                  <Text
+                  <TouchableOpacity
                     style={[
-                      styles.filterOptionText,
-                      selectedFilter === '거리순' &&
-                        styles.selectedFilterOptionText,
-                    ]}>
-                    거리순
-                  </Text>
-                </TouchableOpacity>
+                      styles.filterOption,
+                      isFilterPressed === '거리순' &&
+                        styles.selectedFilterOption,
+                    ]}
+                    onPressIn={() => setIsFilterPressed('거리순')}
+                    onPressOut={() => {
+                      setIsFilterPressed(null);
+                      handleFilterSelect('거리순');
+                    }}>
+                    <Text
+                      style={[
+                        styles.filterOptionText,
+                        selectedFilter === '거리순' &&
+                          styles.selectedFilterOptionText,
+                      ]}>
+                      거리순
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               </View>
-            </View>
+            </TouchableWithoutFeedback>
           </Modal>
         </View>
       )}
@@ -281,16 +269,46 @@ const SearchScreen: React.FC<Props> = ({navigation}) => {
             data={recentSearches}
             renderItem={({item}) => (
               <View style={styles.recentSearchItem}>
-                <View style={styles.searchItemLeft}>
-                  <Svg width="16" height="17" viewBox="0 0 16 17" fill="none">
-                    <Path
-                      d="M8.00004 4.49992V8.49992L10.6667 9.83325M14.6667 8.49992C14.6667 12.1818 11.6819 15.1666 8.00004 15.1666C4.31814 15.1666 1.33337 12.1818 1.33337 8.49992C1.33337 4.81802 4.31814 1.83325 8.00004 1.83325C11.6819 1.83325 14.6667 4.81802 14.6667 8.49992Z"
-                      stroke="#D2D3D3"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </Svg>
-                  <Text style={styles.recentSearchText}>{item}</Text>
+                <Svg width="16" height="17" viewBox="0 0 16 17" fill="none">
+                  <Path
+                    d="M8.00004 4.49992V8.49992L10.6667 9.83325M14.6667 8.49992C14.6667 12.1818 11.6819 15.1666 8.00004 15.1666C4.31814 15.1666 1.33337 12.1818 1.33337 8.49992C1.33337 4.81802 4.31814 1.83325 8.00004 1.83325C11.6819 1.83325 14.6667 4.81802 14.6667 8.49992Z"
+                    stroke="#D2D3D3"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </Svg>
+
+                <View style={styles.searchItemContent}>
+                  <Text style={styles.searchText}>{item}</Text>
+
+                  <TouchableOpacity onPress={() => clearRecentSearch(item)}>
+                    <Svg width="16" height="17" viewBox="0 0 16 17" fill="none">
+                      <G clipPath="url(#clip0_323_1064)">
+                        <Path
+                          fillRule="evenodd"
+                          clipRule="evenodd"
+                          d="M3.75735 4.07597C3.95261 3.8807 4.26919 3.8807 4.46445 4.07597L12.2426 11.8541C12.4379 12.0494 12.4379 12.366 12.2426 12.5612C12.0474 12.7565 11.7308 12.7565 11.5355 12.5612L3.75735 4.78307C3.56209 4.58781 3.56209 4.27123 3.75735 4.07597Z"
+                          fill="#D2D3D3"
+                        />
+                        <Path
+                          fillRule="evenodd"
+                          clipRule="evenodd"
+                          d="M12.2427 4.07597C12.4379 4.27123 12.4379 4.58781 12.2427 4.78307L4.46448 12.5612C4.26922 12.7565 3.95263 12.7565 3.75737 12.5612C3.56211 12.366 3.56211 12.0494 3.75737 11.8541L11.5355 4.07597C11.7308 3.8807 12.0474 3.8807 12.2427 4.07597Z"
+                          fill="#D2D3D3"
+                        />
+                      </G>
+                      <Defs>
+                        <ClipPath id="clip0_323_1064">
+                          <Rect
+                            width="12"
+                            height="12"
+                            fill="white"
+                            transform="translate(8 -0.166748) rotate(45)"
+                          />
+                        </ClipPath>
+                      </Defs>
+                    </Svg>
+                  </TouchableOpacity>
                 </View>
               </View>
             )}
@@ -305,9 +323,15 @@ const SearchScreen: React.FC<Props> = ({navigation}) => {
               <View
                 style={[
                   styles.categoryBox,
-                  {backgroundColor: categoryColors[item.type] || '#F3F5F7'},
+                  {
+                    backgroundColor:
+                      categoryColors[categoryMapToKorean[item.category]] ||
+                      '#F3F5F7',
+                  },
                 ]}>
-                <Text style={styles.categoryBoxText}>{item.type}</Text>
+                <Text style={styles.categoryBoxText}>
+                  {categoryMapToKorean[item.category] || item.category}
+                </Text>
               </View>
 
               <Text style={styles.resultName}>{item.name}</Text>
@@ -319,16 +343,22 @@ const SearchScreen: React.FC<Props> = ({navigation}) => {
                     fill="#FFD643"
                   />
                 </Svg>
-                <Text style={styles.ratingText}>{item.rating.toFixed(1)}</Text>
-                <Text style={styles.reviewCount}>({item.reviews})</Text>
+                <Text style={styles.ratingText}>
+                  {item.rating?.toFixed(1) || 'N/A'}
+                </Text>
+                <Text style={styles.reviewCount}>({item.reviews || 0})</Text>
               </View>
 
               <Text style={styles.resultDetails}>
-                {`${item.distance} · ${item.address} | ${item.hours}`}
+                {`${item.distance || 'N/A'} · ${
+                  item.address || '주소 없음'
+                } | ${item.hours || '운영시간 없음'}`}
               </Text>
             </View>
           )}
-          keyExtractor={item => item.id.toString()}
+          keyExtractor={item =>
+            item.placeId ? item.placeId.toString() : Math.random().toString()
+          }
         />
       )}
     </KeyboardAvoidingView>
@@ -379,16 +409,6 @@ const styles = StyleSheet.create({
   categoryItemSelected: {
     borderBottomColor: '#222',
   },
-  categoryText: {
-    color: '#8E9398',
-    fontSize: 14,
-    fontFamily: 'Pretendard-Regular',
-    lineHeight: 21,
-  },
-  categoryTextSelected: {
-    color: '#222',
-    fontFamily: 'Pretendard-Bold',
-  },
   categoryBox: {
     paddingHorizontal: 12,
     paddingVertical: 2,
@@ -399,44 +419,19 @@ const styles = StyleSheet.create({
   },
   categoryBoxText: {
     color: '#1A1A1B',
-    fontFamily: 'Pretendard-Regular',
     fontSize: 12,
+    fontFamily: 'Pretendard-Regular',
     lineHeight: 18,
   },
-  resultItem: {
-    paddingVertical: 12,
-    paddingHorizontal: 6,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E8E8E8',
-  },
-  resultName: {
-    color: '#1A1A1B',
-    fontFamily: 'Pretendard-Bold',
-    fontSize: 16,
-    lineHeight: 24,
-  },
-  ratingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 4,
-    marginBottom: 4,
-  },
-  ratingText: {
-    marginLeft: 4,
-    color: '#1A1A1B',
-    fontFamily: 'Pretendard-Regular',
-    fontSize: 12,
-  },
-  reviewCount: {
-    marginLeft: 4,
+  categoryText: {
     color: '#8E9398',
-    fontSize: 12,
+    fontSize: 14,
     fontFamily: 'Pretendard-Regular',
+    lineHeight: 21,
   },
-  resultDetails: {
-    color: '#666',
+  categoryTextSelected: {
+    color: '#222',
     fontFamily: 'Pretendard-Bold',
-    marginTop: 4,
   },
   filterWrapper: {
     flexDirection: 'row',
@@ -520,19 +515,59 @@ const styles = StyleSheet.create({
   },
   recentSearchItem: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: 10,
   },
-  searchItemLeft: {
+  searchItemContent: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginLeft: 12,
+    flex: 1,
+    justifyContent: 'space-between',
   },
-  recentSearchText: {
+  searchText: {
+    flex: 1,
     color: '#1A1A1B',
+    fontFamily: 'Pretendard-Regular',
     fontSize: 14,
     lineHeight: 21,
-    marginLeft: 12,
+  },
+  resultItem: {
+    paddingVertical: 12,
+    paddingHorizontal: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E8E8E8',
+  },
+  resultName: {
+    color: '#1A1A1B',
+    fontFamily: 'Pretendard-Bold',
+    fontSize: 16,
+    lineHeight: 24,
+  },
+  ratingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+    marginBottom: 4,
+  },
+  ratingText: {
+    marginLeft: 4,
+    color: '#1A1A1B',
+    fontFamily: 'Pretendard-Regular',
+    fontSize: 12,
+  },
+  reviewCount: {
+    marginLeft: 4,
+    color: '#8E9398',
+    fontSize: 12,
+    fontFamily: 'Pretendard-Regular',
+  },
+  resultDetails: {
+    color: '#666',
+    fontSize: 12,
+    fontFamily: 'Pretendard-Bold',
+    marginTop: 4,
+    lineHeight: 18,
   },
 });
 
