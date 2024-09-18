@@ -1,17 +1,32 @@
-import React, { useState } from 'react';
-import { View, TextInput, StyleSheet, TouchableOpacity, Text, Modal, TouchableWithoutFeedback } from 'react-native';
-import Svg, { Path, G, Defs, ClipPath, Rect } from 'react-native-svg';
+import React, {useState} from 'react';
+import {
+  View,
+  TextInput,
+  StyleSheet,
+  TouchableOpacity,
+  Text,
+  Modal,
+  TouchableWithoutFeedback,
+} from 'react-native';
+import Svg, {Path, G, Defs, ClipPath, Rect} from 'react-native-svg';
 import Footer from '../components/Footer';
+import {useNavigation} from '@react-navigation/native';
 import MapComponent from '../components/MapComponent';
+import {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import {RootStackParamList} from '../App';
 
-const Home = () => {
+type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Home'>;
+
+const Home: React.FC = () => {
+  const navigation = useNavigation<NavigationProp>();
   const [showVoiceRecognition, setShowVoiceRecognition] = useState(false);
-
 
   return (
     <View style={styles.container}>
       <View style={styles.searchContainer}>
-        <View style={styles.searchBox}>
+        <TouchableOpacity
+          onPress={() => navigation.navigate('SearchScreen')}
+          style={styles.searchBox}>
           <Svg width="16" height="16" viewBox="0 0 16 16" fill="none">
             <G clipPath="url(#clip0_305_1339)">
               <Path
@@ -29,12 +44,23 @@ const Home = () => {
             </G>
             <Defs>
               <ClipPath id="clip0_305_1339">
-                <Rect width="15" height="15" fill="white" transform="translate(0.5 0.5)" />
+                <Rect
+                  width="15"
+                  height="15"
+                  fill="white"
+                  transform="translate(0.5 0.5)"
+                />
               </ClipPath>
             </Defs>
           </Svg>
-          <TextInput style={styles.input} placeholder="검색어를 입력해주세요." placeholderTextColor="#8E9398" />
-          <TouchableOpacity onPress={() => setShowVoiceRecognition(!showVoiceRecognition)}>
+          <TextInput
+            style={styles.input}
+            placeholder="검색어를 입력해주세요."
+            editable={false}
+            placeholderTextColor="#8E9398"
+          />
+          <TouchableOpacity
+            onPress={() => setShowVoiceRecognition(!showVoiceRecognition)}>
             <Svg width="20" height="21" viewBox="0 0 20 21" fill="none">
               <Path
                 d="M15.8333 8.83342V10.5001C15.8333 13.7217 13.2216 16.3334 9.99996 16.3334M4.16663 8.83342V10.5001C4.16663 13.7217 6.7783 16.3334 9.99996 16.3334M9.99996 16.3334V18.8334M6.66663 18.8334H13.3333M9.99996 13.0001C8.61925 13.0001 7.49996 11.8808 7.49996 10.5001V4.66675C7.49996 3.28604 8.61925 2.16675 9.99996 2.16675C11.3807 2.16675 12.5 3.28604 12.5 4.66675V10.5001C12.5 11.8808 11.3807 13.0001 9.99996 13.0001Z"
@@ -45,21 +71,25 @@ const Home = () => {
               />
             </Svg>
           </TouchableOpacity>
-        </View>
+        </TouchableOpacity>
       </View>
 
       <Modal
         transparent={true}
         visible={showVoiceRecognition}
         animationType="slide"
-        onRequestClose={() => setShowVoiceRecognition(false)}
-      >
-        <TouchableWithoutFeedback onPress={() => setShowVoiceRecognition(false)}>
+        onRequestClose={() => setShowVoiceRecognition(false)}>
+        <TouchableWithoutFeedback
+          onPress={() => setShowVoiceRecognition(false)}>
           <View style={styles.overlay}>
             <View style={styles.voiceRecognitionContainer}>
-              <Text style={styles.voiceRecognitionText}>음성 인식으로 원하는 쉼터를 찾아보세요</Text>
+              <Text style={styles.voiceRecognitionText}>
+                음성 인식으로 원하는 쉼터를 찾아보세요
+              </Text>
               <View style={styles.voiceRecognitionInner}>
-                <Text style={styles.voiceRecognitionPrompt}>"제일 가까운 쉼터 찾아줘"</Text>
+                <Text style={styles.voiceRecognitionPrompt}>
+                  "제일 가까운 쉼터 찾아줘"
+                </Text>
               </View>
               <TouchableOpacity style={styles.microphoneButton}>
                 <Svg width="27" height="37" viewBox="0 0 27 37" fill="none">
