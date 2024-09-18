@@ -30,11 +30,11 @@ const initialCamera = {
 };
 
 const categories = [
-  {label: '전체', value: 'TOGETHER'},
-  {label: '무더위쉼터', value: 'HOT'},
-  {label: '한파쉼터', value: 'COLD'},
-  {label: '도서관쉼터', value: 'LIBRARY'},
-  {label: '스마트쉼터', value: 'SMART'},
+  { label: '전체', value: 'TOGETHER' },
+  { label: '무더위쉼터', value: 'HOT' },
+  { label: '한파쉼터', value: 'COLD' },
+  { label: '도서관쉼터', value: 'LIBRARY' },
+  { label: '스마트쉼터', value: 'SMART' },
 ];
 
 const MapComponent = () => {
@@ -47,9 +47,7 @@ const MapComponent = () => {
   const [locationError, setLocationError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('TOGETHER');
   const [district, setDistrict] = useState<string>('');
-  const [markers, setMarkers] = useState<
-    {latitude: number; longitude: number}[]
-  >([]);
+  const [markers, setMarkers] = useState<{latitude: number, longitude: number}[]>([]);
 
   const requestLocationPermission = useCallback(async () => {
     if (Platform.OS === 'android') {
@@ -70,6 +68,69 @@ const MapComponent = () => {
     }
     return true;
   }, []);
+
+  // 구 정보
+  const fetchDistrictName = useCallback(async (latitude: number, longitude: number) => {
+    try {
+      const response = await axios.get(
+        'https://naveropenapi.apigw.ntruss.com/map-reversegeocode/v2/gc',
+        {
+          params: {
+            coords: `${longitude},${latitude}`,
+            orders: 'legalcode,admcode',
+            output: 'json',
+          },
+          headers: {
+            'X-NCP-APIGW-API-KEY-ID': NAVER_CLIENT_ID,
+            'X-NCP-APIGW-API-KEY': NAVER_API_KEY,
+          },
+        },
+      );
+
+      const region = response.data.results?.[0]?.region;
+      const fetchedDistrict = region?.area2?.name || '구 정보 없음';
+      setDistrict(fetchedDistrict);
+
+      fetchNearbyPlaces(latitude, longitude, fetchedDistrict, selectedCategory);
+    } catch (error) {
+      console.error('구 정보 가져오기 실패:', error);
+    }
+  }, [selectedCategory]);
+
+  // 카테고리별 주변 장소
+  const fetchNearbyPlaces = async (latitude: number, longitude: number, region: string, category: string) => {
+    try {
+      const response = await axios.get('http://211.188.51.4/places/nearby', {
+        params: {
+          longitude,
+          latitude,
+          radius: 1000,
+          category,
+          region,
+        },
+      });
+
+      // console.log('API 응답:', response.data);
+
+      if (response.data.isSuccess) {
+        const places = response.data.results.placeList || [];
+
+        if (Array.isArray(places)) {
+          setMarkers(places.map((place: any) => ({
+            latitude: place.latitude,
+            longitude: place.longitude,
+          })));
+        } else {
+          console.warn('Unexpected format: results.placeList is not an array.');
+          setMarkers([]);
+        }
+      } else {
+        console.warn('데이터 가져오기 실패:', response.data.message);
+      }
+    } catch (error) {
+      console.error('장소 정보 가져오기 실패:', error);
+    }
+  };
 
   const moveToCurrentLocation = useCallback(() => {
     Geolocation.getCurrentPosition(
@@ -119,75 +180,7 @@ const MapComponent = () => {
       },
       {enableHighAccuracy: true, timeout: 15000, maximumAge: 0},
     );
-  }, [mapViewRef]);
-
-  const fetchDistrictName = async (latitude: number, longitude: number) => {
-    try {
-      const response = await axios.get(
-        'https://naveropenapi.apigw.ntruss.com/map-reversegeocode/v2/gc',
-        {
-          params: {
-            coords: `${longitude},${latitude}`,
-            orders: 'legalcode,admcode',
-            output: 'json',
-          },
-          headers: {
-            'X-NCP-APIGW-API-KEY-ID': NAVER_CLIENT_ID,
-            'X-NCP-APIGW-API-KEY': NAVER_API_KEY,
-          },
-        },
-      );
-
-      const region = response.data.results?.[0]?.region;
-      const fetchedDistrict = region?.area2?.name || '구 정보 없음';
-      setDistrict(fetchedDistrict);
-
-      fetchNearbyPlaces(latitude, longitude, fetchedDistrict, selectedCategory);
-    } catch (error) {
-      console.error('구 정보 가져오기 실패:', error);
-    }
-  };
-
-  const fetchNearbyPlaces = async (
-    latitude: number,
-    longitude: number,
-    region: string,
-    category: string,
-  ) => {
-    try {
-      const response = await axios.get('http://211.188.51.4/places/nearby', {
-        params: {
-          longitude,
-          latitude,
-          radius: 1000,
-          category,
-          region,
-        },
-      });
-
-
-    // console.log('API 응답:', response.data);
-
-
-      if (response.data.isSuccess) {
-        const places = response.data.results.placeList || [];
-
-        if (Array.isArray(places)) {
-          setMarkers(places.map((place: any) => ({
-            latitude: place.latitude,
-            longitude: place.longitude,
-          })));
-        } else {
-          console.warn('Unexpected format: results is not an array.');
-          setMarkers([]);
-        }
-      } else {
-        console.warn('데이터 가져오기 실패:', response.data.message);
-      }
-    } catch (error) {
-      console.error('장소 정보 가져오기 실패:', error);
-    }
-  };
+  }, [fetchDistrictName, mapViewRef]);
 
   useEffect(() => {
     const initializeLocation = async () => {
@@ -208,12 +201,7 @@ const MapComponent = () => {
 
   useEffect(() => {
     if (currentLocation && district) {
-      fetchNearbyPlaces(
-        currentLocation.latitude,
-        currentLocation.longitude,
-        district,
-        selectedCategory,
-      );
+      fetchNearbyPlaces(currentLocation.latitude, currentLocation.longitude, district, selectedCategory);
     }
   }, [currentLocation, selectedCategory, district]);
 
@@ -231,6 +219,20 @@ const MapComponent = () => {
     fetchDistrictName(latitude, longitude);
   };
 
+  const handleCameraChange = (event: {latitude: number, longitude: number}) => {
+    const {latitude, longitude} = event;
+
+    setCamera({
+      latitude,
+      longitude,
+      zoom: 16,
+      tilt: 0,
+      bearing: 0,
+    });
+
+    fetchDistrictName(latitude, longitude);
+  };
+
   return (
     <View style={styles.container}>
       {/* @ts-ignore: children 속성 오류 무시 */}
@@ -241,6 +243,7 @@ const MapComponent = () => {
         zoomControl={true}
         showsMyLocationButton={false}
         onMapClick={handleMapClick}
+        onCameraChange={handleCameraChange}
         scrollGesturesEnabled={true}>
         {currentLocation && (
           <Marker
@@ -253,10 +256,8 @@ const MapComponent = () => {
           <Marker
             key={index}
             coordinate={marker}
-            pinColor="yellow" // Markers for nearby places
-            onClick={() =>
-              console.warn(`마커 클릭: ${marker.latitude}, ${marker.longitude}`)
-            }
+            pinColor="green"
+            onClick={() => console.warn(`마커 클릭: ${marker.latitude}, ${marker.longitude}`)}
           />
         ))}
       </NaverMapView>
