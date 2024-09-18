@@ -30,11 +30,11 @@ const initialCamera = {
 };
 
 const categories = [
-  '전체',
-  '무더위쉼터',
-  '한파쉼터',
-  '도서관쉼터',
-  '스마트쉼터',
+  {label: '전체', value: 'TOGETHER'},
+  {label: '무더위쉼터', value: 'HOT'},
+  {label: '한파쉼터', value: 'COLD'},
+  {label: '도서관쉼터', value: 'LIBRARY'},
+  {label: '스마트쉼터', value: 'SMART'},
 ];
 
 const MapComponent = () => {
@@ -45,9 +45,11 @@ const MapComponent = () => {
     longitude: number;
   } | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(
-    '전체',
-  );
+  const [selectedCategory, setSelectedCategory] = useState<string>('TOGETHER');
+  const [district, setDistrict] = useState<string>('');
+  const [markers, setMarkers] = useState<
+    {latitude: number; longitude: number}[]
+  >([]);
 
   const requestLocationPermission = useCallback(async () => {
     if (Platform.OS === 'android') {
@@ -136,16 +138,54 @@ const MapComponent = () => {
         },
       );
 
-      // console.log(
-      //   'Reverse Geocode API Response:',
-      //   JSON.stringify(response.data, null, 2),
-      // );
-
       const region = response.data.results?.[0]?.region;
-      const district = region?.area2?.name || '구 정보 없음';
-      console.log(`현재 위치의 구 정보: ${district}`);
+      const fetchedDistrict = region?.area2?.name || '구 정보 없음';
+      setDistrict(fetchedDistrict);
+
+      fetchNearbyPlaces(latitude, longitude, fetchedDistrict, selectedCategory);
     } catch (error) {
       console.error('구 정보 가져오기 실패:', error);
+    }
+  };
+
+  const fetchNearbyPlaces = async (
+    latitude: number,
+    longitude: number,
+    region: string,
+    category: string,
+  ) => {
+    try {
+      const response = await axios.get('http://211.188.51.4/places/nearby', {
+        params: {
+          longitude,
+          latitude,
+          radius: 1000,
+          category,
+          region,
+        },
+      });
+
+
+    // console.log('API 응답:', response.data);
+
+
+      if (response.data.isSuccess) {
+        const places = response.data.results.placeList || [];
+
+        if (Array.isArray(places)) {
+          setMarkers(places.map((place: any) => ({
+            latitude: place.latitude,
+            longitude: place.longitude,
+          })));
+        } else {
+          console.warn('Unexpected format: results is not an array.');
+          setMarkers([]);
+        }
+      } else {
+        console.warn('데이터 가져오기 실패:', response.data.message);
+      }
+    } catch (error) {
+      console.error('장소 정보 가져오기 실패:', error);
     }
   };
 
@@ -165,6 +205,17 @@ const MapComponent = () => {
 
     initializeLocation();
   }, [moveToCurrentLocation, requestLocationPermission]);
+
+  useEffect(() => {
+    if (currentLocation && district) {
+      fetchNearbyPlaces(
+        currentLocation.latitude,
+        currentLocation.longitude,
+        district,
+        selectedCategory,
+      );
+    }
+  }, [currentLocation, selectedCategory, district]);
 
   const handleCategoryPress = (category: string) => {
     setSelectedCategory(category);
@@ -198,6 +249,16 @@ const MapComponent = () => {
             onClick={() => console.warn('현재 위치 마커 클릭됨')}
           />
         )}
+        {markers.map((marker, index) => (
+          <Marker
+            key={index}
+            coordinate={marker}
+            pinColor="yellow" // Markers for nearby places
+            onClick={() =>
+              console.warn(`마커 클릭: ${marker.latitude}, ${marker.longitude}`)
+            }
+          />
+        ))}
       </NaverMapView>
 
       {locationError && (
@@ -224,17 +285,17 @@ const MapComponent = () => {
         {categories.map((category, index) => (
           <TouchableOpacity
             key={index}
-            onPress={() => handleCategoryPress(category)}>
+            onPress={() => handleCategoryPress(category.value)}>
             <View
               style={[
                 styles.circle,
                 {
                   marginLeft: index === 0 ? 16 : 6,
                   borderColor:
-                    selectedCategory === category ? '#222' : '#D2D3D3',
+                    selectedCategory === category.value ? '#222' : '#D2D3D3',
                 },
               ]}>
-              <Text style={styles.circleText}>{category}</Text>
+              <Text style={styles.circleText}>{category.label}</Text>
             </View>
           </TouchableOpacity>
         ))}
