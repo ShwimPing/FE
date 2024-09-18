@@ -1,4 +1,5 @@
-import React, {useState} from 'react';
+/* eslint-disable react-hooks/exhaustive-deps */
+import React, {useState, useEffect} from 'react';
 import {
   View,
   TextInput,
@@ -9,6 +10,7 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Modal,
 } from 'react-native';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {RootStackParamList} from '../App';
@@ -21,8 +23,10 @@ const SearchScreen: React.FC<Props> = ({navigation}) => {
   const [selectedCategory, setSelectedCategory] = useState('전체');
   const [filteredResults, setFilteredResults] = useState<any[]>([]);
   const [searchActive, setSearchActive] = useState(false);
+  const [filterModalVisible, setFilterModalVisible] = useState(false);
+  const [selectedFilter, setSelectedFilter] = useState('별점순');
+  const [isFilterPressed, setIsFilterPressed] = useState<string | null>(null);
 
-  // 더미 데이터
   const data = [
     {
       id: 1,
@@ -92,21 +96,26 @@ const SearchScreen: React.FC<Props> = ({navigation}) => {
   };
 
   const handleSearch = () => {
-    if (searchQuery.trim().length > 0) {
-      const filtered = data.filter(item => {
-        const matchesCategory =
-          selectedCategory === '전체' || item.type === selectedCategory;
-        const matchesQuery =
-          item.name.includes(searchQuery) || item.address.includes(searchQuery);
-        return matchesCategory && matchesQuery;
-      });
-      setFilteredResults(filtered);
-      setSearchActive(true);
-    } else {
+    if (searchQuery.trim() === '') {
       setSearchActive(false);
-      setFilteredResults([]);
+      return;
     }
+
+    const filtered = data.filter(item => {
+      const matchesCategory =
+        selectedCategory === '전체' || item.type === selectedCategory;
+      const matchesQuery =
+        item.name.includes(searchQuery) || item.address.includes(searchQuery);
+      return matchesCategory && matchesQuery;
+    });
+
+    setFilteredResults(filtered);
+    setSearchActive(true);
   };
+
+  useEffect(() => {
+    handleSearch();
+  }, [selectedCategory, searchQuery]);
 
   const handleCategorySelect = (category: string) => {
     setSelectedCategory(category);
@@ -114,6 +123,15 @@ const SearchScreen: React.FC<Props> = ({navigation}) => {
 
   const clearRecentSearches = () => {
     setRecentSearches([]);
+  };
+
+  const toggleFilterModal = () => {
+    setFilterModalVisible(!filterModalVisible);
+  };
+
+  const handleFilterSelect = (filter: string) => {
+    setSelectedFilter(filter);
+    toggleFilterModal();
   };
 
   return (
@@ -147,30 +165,107 @@ const SearchScreen: React.FC<Props> = ({navigation}) => {
       </View>
 
       {searchQuery.length > 0 && (
-        <View style={styles.categoryWrapper}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.categoryContainer}>
-            {categories.map(category => (
-              <TouchableOpacity
-                key={category}
-                onPress={() => handleCategorySelect(category)}
-                style={[
-                  styles.categoryItem,
-                  selectedCategory === category && styles.categoryItemSelected,
-                ]}>
-                <Text
+        <View>
+          <View style={styles.categoryWrapper}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.categoryContainer}>
+              {categories.map(category => (
+                <TouchableOpacity
+                  key={category}
+                  onPress={() => handleCategorySelect(category)}
                   style={[
-                    styles.categoryText,
+                    styles.categoryItem,
                     selectedCategory === category &&
-                      styles.categoryTextSelected,
+                      styles.categoryItemSelected,
                   ]}>
-                  {category}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+                  <Text
+                    style={[
+                      styles.categoryText,
+                      selectedCategory === category &&
+                        styles.categoryTextSelected,
+                    ]}>
+                    {category}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+
+          <View style={styles.filterWrapper}>
+            <TouchableOpacity
+              style={styles.filterButton}
+              onPress={toggleFilterModal}>
+              <Text style={styles.filterButtonText}>{selectedFilter}</Text>
+              <Svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                style={styles.filterIcon}>
+                <Path
+                  d="M6 9L12 15L18 9"
+                  stroke="#505458"
+                  strokeWidth="1.3"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </Svg>
+            </TouchableOpacity>
+          </View>
+
+          <Modal
+            visible={filterModalVisible}
+            transparent={true}
+            animationType="slide"
+            onRequestClose={toggleFilterModal}>
+            <View style={styles.modalOverlay}>
+              <View style={styles.filterModal}>
+                <Text style={styles.filterModalTitle}>필터</Text>
+
+                <TouchableOpacity
+                  style={[
+                    styles.filterOption,
+                    isFilterPressed === '별점순' && styles.selectedFilterOption,
+                  ]}
+                  onPressIn={() => setIsFilterPressed('별점순')}
+                  onPressOut={() => {
+                    setIsFilterPressed(null);
+                    handleFilterSelect('별점순');
+                  }}>
+                  <Text
+                    style={[
+                      styles.filterOptionText,
+                      selectedFilter === '별점순' &&
+                        styles.selectedFilterOptionText,
+                    ]}>
+                    별점순
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.filterOption,
+                    isFilterPressed === '거리순' && styles.selectedFilterOption,
+                  ]}
+                  onPressIn={() => setIsFilterPressed('거리순')}
+                  onPressOut={() => {
+                    setIsFilterPressed(null);
+                    handleFilterSelect('거리순');
+                  }}>
+                  <Text
+                    style={[
+                      styles.filterOptionText,
+                      selectedFilter === '거리순' &&
+                        styles.selectedFilterOptionText,
+                    ]}>
+                    거리순
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Modal>
         </View>
       )}
 
@@ -342,6 +437,66 @@ const styles = StyleSheet.create({
     color: '#666',
     fontFamily: 'Pretendard-Bold',
     marginTop: 4,
+  },
+  filterWrapper: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  filterButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  filterButtonText: {
+    fontSize: 14,
+    color: '#505458',
+    fontFamily: 'Pretendard-Regular',
+  },
+  filterIcon: {
+    marginLeft: 4,
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+  },
+  filterModal: {
+    width: '100%',
+    height: 189,
+    paddingVertical: 20,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    backgroundColor: '#fff',
+  },
+  filterModalTitle: {
+    color: '#1A1A1B',
+    fontSize: 16,
+    fontFamily: 'Pretendard-Bold',
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  filterOption: {
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    alignItems: 'center',
+    paddingVertical: 18,
+    paddingHorizontal: 16,
+    backgroundColor: '#fff',
+    borderRadius: 4,
+  },
+  selectedFilterOption: {
+    backgroundColor: '#F1F1F1',
+  },
+  filterOptionText: {
+    fontSize: 14,
+    fontFamily: 'Pretendard-Regular',
+    color: '#1A1A1B',
+  },
+  selectedFilterOptionText: {
+    fontFamily: 'Pretendard-Bold',
+    color: '#1A1A1B',
   },
   recentSearchContainer: {
     flex: 1,
