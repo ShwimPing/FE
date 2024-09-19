@@ -4,9 +4,10 @@ import React, {useEffect, useState} from 'react';
 import {View, Text, StyleSheet, ScrollView, TouchableOpacity, Image} from 'react-native';
 import Svg, {Path} from 'react-native-svg';
 import axios from 'axios';
+import { useNavigation, NavigationProp } from '@react-navigation/native';
+import { RootStackParamList } from '../App';
 import {useRoute} from '@react-navigation/native';
 
-// 카테고리 색상 맵 정의
 const categoryColors: {[key: string]: string} = {
   TOGETHER: '#F3F5F7',
   SMART: '#E5F9EE',
@@ -15,7 +16,6 @@ const categoryColors: {[key: string]: string} = {
   COLD: '#E8EAF6',
 };
 
-// 카테고리 이름 한글화
 const categoryMapToKorean: {[key: string]: string} = {
   TOGETHER: '전체',
   SMART: '기후동행쉼터',
@@ -31,7 +31,7 @@ interface PlaceDetail {
   openTime: string;
   closeTime: string;
   category: string;
-  rating: number;  // 평균 별점
+  rating: number;
   isBookmarked: boolean;
 }
 
@@ -46,6 +46,7 @@ interface Review {
 
 const SearchDetail: React.FC = () => {
   const route = useRoute();
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const {placeId} = route.params as {placeId: number};
 
   const [placeDetail, setPlaceDetail] = useState<PlaceDetail | null>(null);
@@ -221,7 +222,7 @@ const SearchDetail: React.FC = () => {
           </Svg>
           <Text style={styles.footerText}>34</Text>
         </View>
-        <TouchableOpacity style={styles.footerButton}>
+        <TouchableOpacity style={styles.footerButton} onPress={() => navigation.navigate('ReviewForm')}>
           <Text style={styles.footerButtonText}>리뷰 작성하기</Text>
         </TouchableOpacity>
       </View>
