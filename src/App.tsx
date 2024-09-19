@@ -214,9 +214,16 @@ const App: React.FC = () => {
           <Stack.Screen
             name="SearchDetail"
             component={SearchDetail}
-            options={{
-              headerShown: false,
-            }}
+            options={({navigation}) => ({
+              headerShown: true,
+              headerTitle: '',
+              headerShadowVisible: false,
+              headerLeft: () => (
+                <TouchableOpacity onPress={() => navigation.goBack()}>
+                  <BackIcon />
+                </TouchableOpacity>
+              ),
+            })}
           />
           <Stack.Screen
             name="ContentsList"
