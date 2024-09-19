@@ -19,6 +19,7 @@ import ProfileEdit from './screens/MyPage/ProfileEdit';
 import MyReview from './screens/MyPage/MyReview';
 import NaverLogin from '@react-native-seoul/naver-login';
 import SearchScreen from './screens/SearhScreen';
+import SearchDetail from './screens/SearchDetail';
 
 const consumerKey = 'XQ774qjn0QvrLziS0efY';
 const consumerSecret = '6OIm7uvnU6';
@@ -35,6 +36,7 @@ export type RootStackParamList = {
   SignUpComplete: undefined;
   Home: undefined;
   SearchScreen: undefined;
+  SearchDetail: { placeId: number };
   ContentsList: undefined;
   ContentDetail: {title: string};
   MyPage: undefined;
@@ -205,6 +207,13 @@ const App: React.FC = () => {
           <Stack.Screen
             name="SearchScreen"
             component={SearchScreen}
+            options={{
+              headerShown: false,
+            }}
+          />
+          <Stack.Screen
+            name="SearchDetail"
+            component={SearchDetail}
             options={{
               headerShown: false,
             }}

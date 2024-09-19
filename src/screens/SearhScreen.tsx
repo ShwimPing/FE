@@ -319,46 +319,49 @@ const SearchScreen: React.FC<Props> = ({navigation}) => {
         <FlatList
           data={filteredResults}
           renderItem={({item}) => (
-            <View style={styles.resultItem}>
-              <View
-                style={[
-                  styles.categoryBox,
-                  {
-                    backgroundColor:
-                      categoryColors[categoryMapToKorean[item.category]] ||
-                      '#F3F5F7',
-                  },
-                ]}>
-                <Text style={styles.categoryBoxText}>
-                  {categoryMapToKorean[item.category] || item.category}
+            <TouchableOpacity
+              onPress={() =>
+                navigation.navigate('SearchDetail', {placeId: item.placeId})
+              }>
+              <View style={styles.resultItem}>
+                <View
+                  style={[
+                    styles.categoryBox,
+                    {
+                      backgroundColor:
+                        categoryColors[categoryMapToKorean[item.category]] ||
+                        '#F3F5F7',
+                    },
+                  ]}>
+                  <Text style={styles.categoryBoxText}>
+                    {categoryMapToKorean[item.category] || item.category}
+                  </Text>
+                </View>
+
+                <Text style={styles.resultName}>{item.name}</Text>
+
+                <View style={styles.ratingContainer}>
+                  <Svg width="14" height="12" viewBox="0 0 14 12" fill="none">
+                    <Path
+                      d="M7.00003 10.0496L10.0448 11.8912C10.6024 12.2287 11.2847 11.7298 11.138 11.0988L10.331 7.63582L13.0236 5.3027C13.5151 4.87717 13.251 4.07011 12.6054 4.01875L9.06168 3.71794L7.67502 0.445713C7.42556 -0.148571 6.57449 -0.148571 6.32504 0.445713L4.93837 3.71061L1.39468 4.01142C0.749039 4.06278 0.484913 4.86983 0.976481 5.29536L3.6691 7.62848L2.86205 11.0915C2.71531 11.7224 3.39764 12.2213 3.95524 11.8838L7.00003 10.0496Z"
+                      fill="#FFD643"
+                    />
+                  </Svg>
+                  <Text style={styles.ratingText}>
+                    {item.rating?.toFixed(1) || 'N/A'}
+                  </Text>
+                  <Text style={styles.reviewCount}>({item.reviews || 0})</Text>
+                </View>
+
+                <Text style={styles.resultDetails}>
+                  {`${item.distance || 'N/A'} · ${
+                    item.address || '주소 없음'
+                  } | ${item.hours || '운영시간 없음'}`}
                 </Text>
               </View>
-
-              <Text style={styles.resultName}>{item.name}</Text>
-
-              <View style={styles.ratingContainer}>
-                <Svg width="14" height="12" viewBox="0 0 14 12" fill="none">
-                  <Path
-                    d="M7.00003 10.0496L10.0448 11.8912C10.6024 12.2287 11.2847 11.7298 11.138 11.0988L10.331 7.63582L13.0236 5.3027C13.5151 4.87717 13.251 4.07011 12.6054 4.01875L9.06168 3.71794L7.67502 0.445713C7.42556 -0.148571 6.57449 -0.148571 6.32504 0.445713L4.93837 3.71061L1.39468 4.01142C0.749039 4.06278 0.484913 4.86983 0.976481 5.29536L3.6691 7.62848L2.86205 11.0915C2.71531 11.7224 3.39764 12.2213 3.95524 11.8838L7.00003 10.0496Z"
-                    fill="#FFD643"
-                  />
-                </Svg>
-                <Text style={styles.ratingText}>
-                  {item.rating?.toFixed(1) || 'N/A'}
-                </Text>
-                <Text style={styles.reviewCount}>({item.reviews || 0})</Text>
-              </View>
-
-              <Text style={styles.resultDetails}>
-                {`${item.distance || 'N/A'} · ${
-                  item.address || '주소 없음'
-                } | ${item.hours || '운영시간 없음'}`}
-              </Text>
-            </View>
+            </TouchableOpacity>
           )}
-          keyExtractor={item =>
-            item.placeId ? item.placeId.toString() : Math.random().toString()
-          }
+          keyExtractor={item => item.placeId.toString()}
         />
       )}
     </KeyboardAvoidingView>
