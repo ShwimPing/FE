@@ -350,7 +350,9 @@ const SearchScreen: React.FC<Props> = ({navigation}) => {
                   <Text style={styles.ratingText}>
                     {item.rating?.toFixed(1) || 'N/A'}
                   </Text>
-                  <Text style={styles.reviewCount}>({item.reviews || 0})</Text>
+                  <Text style={styles.reviewCount}>
+                    ({item.reviewCount || 0})
+                  </Text>
                 </View>
 
                 <Text style={styles.resultDetails}>
