@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 import {
   View,
   Text,
@@ -8,12 +8,13 @@ import {
   Image,
   Alert,
 } from 'react-native';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../App';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {NativeStackScreenProps} from '@react-navigation/native-stack';
+import {RootStackParamList} from '../App';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
 
-const Login: React.FC<Props> = ({ navigation }) => {
+const Login: React.FC<Props> = ({navigation}) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
@@ -37,7 +38,11 @@ const Login: React.FC<Props> = ({ navigation }) => {
 
       const data = await response.json();
 
-      if (data.isSuccess) {
+      console.log('Response Data:', data);
+
+      if (data.isSuccess && data.results && data.results.accessToken) {
+        await AsyncStorage.setItem('authToken', data.results.accessToken);
+
         navigation.navigate('Home');
       } else {
         Alert.alert('로그인 실패', data.message || '로그인에 실패했습니다.');
@@ -47,6 +52,7 @@ const Login: React.FC<Props> = ({ navigation }) => {
       Alert.alert('로그인 오류', '로그인 중 오류가 발생했습니다. 다시 시도해 주세요.');
     }
   };
+
 
   return (
     <View style={styles.container}>

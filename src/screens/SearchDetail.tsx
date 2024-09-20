@@ -1,11 +1,17 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-shadow */
 import React, {useEffect, useState} from 'react';
-import {View, Text, StyleSheet, ScrollView, TouchableOpacity, Image} from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Image,
+} from 'react-native';
 import Svg, {Path} from 'react-native-svg';
 import axios from 'axios';
-import { useNavigation, NavigationProp } from '@react-navigation/native';
-import { RootStackParamList } from '../App';
+import {useNavigation, NavigationProp} from '@react-navigation/native';
+import {RootStackParamList} from '../App';
 import {useRoute} from '@react-navigation/native';
 
 const categoryColors: {[key: string]: string} = {
@@ -36,12 +42,12 @@ interface PlaceDetail {
 }
 
 interface Review {
-  userName: string;
-  profileImage: string;
+  reviewId: number;
+  writer: string;
+  content: string;
   rating: number;
   date: string;
-  content: string;
-  imageUrl: string;
+  reviewImageUrl: string;
 }
 
 const SearchDetail: React.FC = () => {
@@ -53,33 +59,6 @@ const SearchDetail: React.FC = () => {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const dummyReviews: Review[] = [
-    {
-      userName: '사용자1',
-      profileImage: 'https://via.placeholder.com/40',
-      rating: 5,
-      date: '2023-09-18',
-      content: '훌륭한 쉼터입니다!',
-      imageUrl: 'https://via.placeholder.com/300',
-    },
-    {
-      userName: '사용자2',
-      profileImage: 'https://via.placeholder.com/40',
-      rating: 4,
-      date: '2023-09-17',
-      content: '깨끗하고 좋았습니다.',
-      imageUrl: '',
-    },
-    {
-      userName: '사용자3',
-      profileImage: 'https://via.placeholder.com/40',
-      rating: 3,
-      date: '2023-09-16',
-      content: '사람이 많아 다소 복잡했어요.',
-      imageUrl: 'https://via.placeholder.com/300',
-    },
-  ];
-
   useEffect(() => {
     const fetchPlaceDetail = async () => {
       try {
@@ -89,9 +68,9 @@ const SearchDetail: React.FC = () => {
           },
         });
 
-        const {placeDetail} = response.data.results;
+        const {placeDetail, recentReviews} = response.data.results;
         setPlaceDetail(placeDetail);
-        setReviews(dummyReviews);
+        setReviews(recentReviews);
       } catch (error) {
         console.error('Error fetching place details:', error);
       } finally {
@@ -125,7 +104,12 @@ const SearchDetail: React.FC = () => {
     return (
       <View style={styles.starContainer}>
         {[...Array(filledStars)].map((_, index) => (
-          <Svg key={`filled-${index}`} width="26" height="24" viewBox="0 0 26 24" fill="none">
+          <Svg
+            key={`filled-${index}`}
+            width="26"
+            height="24"
+            viewBox="0 0 26 24"
+            fill="none">
             <Path
               d="M13 20.0993L19.0896 23.7824C20.2048 24.4574 21.5694 23.4595 21.2759 22.1976L19.6618 15.2716L25.0471 10.6054C26.0302 9.75433 25.502 8.14023 24.2107 8.03751L17.1233 7.43589L14.35 0.891426C13.8511 -0.297142 12.1489 -0.297142 11.65 0.891426L8.87669 7.42122L1.7893 8.02284C0.498017 8.12555 -0.0302359 9.73966 0.952901 10.5907L6.33814 15.257L4.72404 22.1829C4.43056 23.4449 5.79522 24.4427 6.91042 23.7677L13 20.0993Z"
               fill="#FFD643"
@@ -133,7 +117,12 @@ const SearchDetail: React.FC = () => {
           </Svg>
         ))}
         {[...Array(emptyStars)].map((_, index) => (
-          <Svg key={`empty-${index}`} width="26" height="24" viewBox="0 0 26 24" fill="none">
+          <Svg
+            key={`empty-${index}`}
+            width="26"
+            height="24"
+            viewBox="0 0 26 24"
+            fill="none">
             <Path
               d="M13 20.0993L19.0896 23.7824C20.2048 24.4574 21.5694 23.4595 21.2759 22.1976L19.6618 15.2716L25.0471 10.6054C26.0302 9.75433 25.502 8.14023 24.2107 8.03751L17.1233 7.43589L14.35 0.891426C13.8511 -0.297142 12.1489 -0.297142 11.65 0.891426L8.87669 7.42122L1.7893 8.02284C0.498017 8.12555 -0.0302359 9.73966 0.952901 10.5907L6.33814 15.257L4.72404 22.1829C4.43056 23.4449 5.79522 24.4427 6.91042 23.7677L13 20.0993Z"
               fill="#E8E8E8"
@@ -150,7 +139,10 @@ const SearchDetail: React.FC = () => {
         <View
           style={[
             styles.categoryBox,
-            {backgroundColor: categoryColors[placeDetail.category] || '#F3F5F7'},
+            {
+              backgroundColor:
+                categoryColors[placeDetail.category] || '#F3F5F7',
+            },
           ]}>
           <Text style={styles.categoryBoxText}>
             {categoryMapToKorean[placeDetail.category] || placeDetail.category}
@@ -161,15 +153,30 @@ const SearchDetail: React.FC = () => {
 
         <View style={styles.locationContainer}>
           <Svg width="16" height="17" viewBox="0 0 16 17" fill="none">
-            <Path d="M7.99999 9.16659C9.10456 9.16659 9.99999 8.27115 9.99999 7.16659C9.99999 6.06202 9.10456 5.16659 7.99999 5.16659C6.89542 5.16659 5.99999 6.06202 5.99999 7.16659C5.99999 8.27115 6.89542 9.16659 7.99999 9.16659Z" stroke="#505458" strokeLinecap="round" strokeLinejoin="round"/>
-            <Path d="M7.99999 15.1666C10.6667 12.4999 13.3333 10.1121 13.3333 7.16659C13.3333 4.22107 10.9455 1.83325 7.99999 1.83325C5.05447 1.83325 2.66666 4.22107 2.66666 7.16659C2.66666 10.1121 5.33332 12.4999 7.99999 15.1666Z" stroke="#505458" strokeLinecap="round" strokeLinejoin="round"/>
+            <Path
+              d="M7.99999 9.16659C9.10456 9.16659 9.99999 8.27115 9.99999 7.16659C9.99999 6.06202 9.10456 5.16659 7.99999 5.16659C6.89542 5.16659 5.99999 6.06202 5.99999 7.16659C5.99999 8.27115 6.89542 9.16659 7.99999 9.16659Z"
+              stroke="#505458"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <Path
+              d="M7.99999 15.1666C10.6667 12.4999 13.3333 10.1121 13.3333 7.16659C13.3333 4.22107 10.9455 1.83325 7.99999 1.83325C5.05447 1.83325 2.66666 4.22107 2.66666 7.16659C2.66666 10.1121 5.33332 12.4999 7.99999 15.1666Z"
+              stroke="#505458"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
           </Svg>
           <Text style={styles.address}>{placeDetail.address}</Text>
         </View>
 
         <View style={styles.openTimeContainer}>
           <Svg width="16" height="17" viewBox="0 0 16 17" fill="none">
-            <Path d="M8.00001 4.49992V8.49992L10.6667 9.83325M14.6667 8.49992C14.6667 12.1818 11.6819 15.1666 8.00001 15.1666C4.31811 15.1666 1.33334 12.1818 1.33334 8.49992C1.33334 4.81802 4.31811 1.83325 8.00001 1.83325C11.6819 1.83325 14.6667 4.81802 14.6667 8.49992Z" stroke="#505458" strokeLinecap="round" strokeLinejoin="round"/>
+            <Path
+              d="M8.00001 4.49992V8.49992L10.6667 9.83325M14.6667 8.49992C14.6667 12.1818 11.6819 15.1666 8.00001 15.1666C4.31811 15.1666 1.33334 12.1818 1.33334 8.49992C1.33334 4.81802 4.31811 1.83325 8.00001 1.83325C11.6819 1.83325 14.6667 4.81802 14.6667 8.49992Z"
+              stroke="#505458"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
           </Svg>
           <Text style={styles.openTime}>
             {placeDetail.openTime} - {placeDetail.closeTime}
@@ -187,17 +194,28 @@ const SearchDetail: React.FC = () => {
           {renderStars(placeDetail.rating)}
         </View>
 
-        {reviews.map((review, index) => (
-          <View key={index} style={styles.reviewContainer}>
+        {reviews.map(review => (
+          <View key={review.reviewId} style={styles.reviewContainer}>
             <View style={styles.reviewHeader}>
               <View style={styles.reviewUser}>
-                <Image source={{uri: review.profileImage}} style={styles.profileImage} />
+                <Image
+                  source={require('../../assets/images/profile.png')}
+                  style={styles.profileImage}
+                />
                 <View>
-                  <Text style={styles.userName}>{review.userName}</Text>
+                  <Text style={styles.userName}>{review.writer}</Text>
                   <View style={styles.userRating}>
                     {[...Array(5)].map((_, i) => (
-                      <Svg key={i} width="14" height="12" viewBox="0 0 14 12" fill="none">
-                        <Path d="M7.00003 10.0496L10.0448 11.8912C10.6024 12.2287 11.2847 11.7298 11.138 11.0988L10.331 7.63582L13.0236 5.3027C13.5151 4.87717 13.251 4.07011 12.6054 4.01875L9.06168 3.71794L7.67502 0.445713C7.42556 -0.148571 6.57449 -0.148571 6.32504 0.445713L4.93837 3.71061L1.39468 4.01142C0.749039 4.06278 0.484913 4.86983 0.976481 5.29536L3.6691 7.62848L2.86205 11.0915C2.71531 11.7224 3.39764 12.2213 3.95524 11.8838L7.00003 10.0496Z" fill={i < review.rating ? '#FFD643' : '#E8E8E8'} />
+                      <Svg
+                        key={i}
+                        width="14"
+                        height="12"
+                        viewBox="0 0 14 12"
+                        fill="none">
+                        <Path
+                          d="M7.00003 10.0496L10.0448 11.8912C10.6024 12.2287 11.2847 11.7298 11.138 11.0988L10.331 7.63582L13.0236 5.3027C13.5151 4.87717 13.251 4.07011 12.6054 4.01875L9.06168 3.71794L7.67502 0.445713C7.42556 -0.148571 6.57449 -0.148571 6.32504 0.445713L4.93837 3.71061L1.39468 4.01142C0.749039 4.06278 0.484913 4.86983 0.976481 5.29536L3.6691 7.62848L2.86205 11.0915C2.71531 11.7224 3.39764 12.2213 3.95524 11.8838L7.00003 10.0496Z"
+                          fill={i < review.rating ? '#FFD643' : '#E8E8E8'}
+                        />
                       </Svg>
                     ))}
                   </View>
@@ -206,11 +224,12 @@ const SearchDetail: React.FC = () => {
               <Text style={styles.reviewDate}>{review.date}</Text>
             </View>
             <Text style={styles.reviewContent}>{review.content}</Text>
-            {review.imageUrl ? (
-              <Image source={{uri: review.imageUrl}} style={styles.reviewImage} />
-            ) : (
-              <View style={styles.reviewImagePlaceholder} />
-            )}
+            {review.reviewImageUrl ? (
+              <Image
+                source={{uri: review.reviewImageUrl}}
+                style={styles.reviewImage}
+              />
+            ) : null}
           </View>
         ))}
       </ScrollView>
@@ -218,11 +237,19 @@ const SearchDetail: React.FC = () => {
       <View style={styles.footer}>
         <View style={styles.footerLeft}>
           <Svg width="24" height="25" viewBox="0 0 24 25" fill="none">
-            <Path d="M5 8.425C5 6.74484 5 5.90476 5.32698 5.26303C5.6146 4.69854 6.07354 4.2396 6.63803 3.95198C7.27976 3.625 8.11984 3.625 9.8 3.625H14.2C15.8802 3.625 16.7202 3.625 17.362 3.95198C17.9265 4.2396 18.3854 4.69854 18.673 5.26303C19 5.90476 19 6.74484 19 8.425V21.625L12 17.625L5 21.625V8.425Z" stroke="#1A1A1B" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+            <Path
+              d="M5 8.425C5 6.74484 5 5.90476 5.32698 5.26303C5.6146 4.69854 6.07354 4.2396 6.63803 3.95198C7.27976 3.625 8.11984 3.625 9.8 3.625H14.2C15.8802 3.625 16.7202 3.625 17.362 3.95198C17.9265 4.2396 18.3854 4.69854 18.673 5.26303C19 5.90476 19 6.74484 19 8.425V21.625L12 17.625L5 21.625V8.425Z"
+              stroke="#1A1A1B"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
           </Svg>
           <Text style={styles.footerText}>34</Text>
         </View>
-        <TouchableOpacity style={styles.footerButton} onPress={() => navigation.navigate('ReviewForm')}>
+        <TouchableOpacity
+          style={styles.footerButton}
+          onPress={() => navigation.navigate('ReviewForm', {placeId})}>
           <Text style={styles.footerButtonText}>리뷰 작성하기</Text>
         </TouchableOpacity>
       </View>
@@ -250,12 +277,12 @@ const styles = StyleSheet.create({
   },
   categoryBoxText: {
     fontSize: 12,
-    fontFamily:'Pretendard-Regular',
+    fontFamily: 'Pretendard-Regular',
     color: '#1A1A1B',
   },
   placeName: {
     fontSize: 18,
-    fontFamily:'Pretendard-Bold',
+    fontFamily: 'Pretendard-Bold',
     color: '#000',
     marginBottom: 4,
     lineHeight: 27,
@@ -268,7 +295,7 @@ const styles = StyleSheet.create({
   address: {
     marginLeft: 4,
     color: '#505458',
-    fontFamily:'Pretendard-Regular',
+    fontFamily: 'Pretendard-Regular',
     fontSize: 14,
     lineHeight: 21,
   },
@@ -280,7 +307,7 @@ const styles = StyleSheet.create({
   openTime: {
     marginLeft: 4,
     color: '#505458',
-    fontFamily:'Pretendard-Regular',
+    fontFamily: 'Pretendard-Regular',
     fontSize: 14,
     lineHeight: 21,
   },
@@ -292,7 +319,7 @@ const styles = StyleSheet.create({
   },
   reviewTitle: {
     fontSize: 18,
-    fontFamily:'Pretendard-Bold',
+    fontFamily: 'Pretendard-Bold',
     lineHeight: 27,
     color: '#000',
     marginBottom: 8,
@@ -305,7 +332,7 @@ const styles = StyleSheet.create({
   },
   averageRatingText: {
     fontSize: 18,
-    fontFamily:'Pretendard-Bold',
+    fontFamily: 'Pretendard-Bold',
     color: '#000',
     marginRight: 12,
   },
