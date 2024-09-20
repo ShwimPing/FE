@@ -43,7 +43,7 @@ export type RootStackParamList = {
   MyPage: undefined;
   ProfileEdit: undefined;
   MyReview: undefined;
-  ReviewForm: undefined;
+  ReviewForm: { placeId: number };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
