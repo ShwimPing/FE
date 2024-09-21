@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "528234559200",
+    "project_id": "shwimping",
+    "storage_bucket": "shwimping.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:528234559200:android:a8291798870ee514bbc285",
+        "android_client_info": {
+          "package_name": "com.example.test"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB8u0GQXZJGSmDDi2sJchWku24X1OEGLA0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
