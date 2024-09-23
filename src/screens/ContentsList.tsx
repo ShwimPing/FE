@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Image, FlatList, StyleSheet } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../App';
@@ -7,27 +7,43 @@ import Footer from '../components/Footer';
 type Props = NativeStackScreenProps<RootStackParamList, 'ContentsList'>;
 
 type ContentItem = {
-  id: string;
+  cardNewsId: string;
   title: string;
-  image: any;
+  cardImageUrl: string;
 };
 
 const ContentsList: React.FC<Props> = ({ navigation }) => {
-  const [selectedTab, setSelectedTab] = useState('폭염');
+  const [selectedTab, setSelectedTab] = useState('HOT');
+  const [data, setData] = useState<ContentItem[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
 
-  const data: ContentItem[] = [
-    { id: '1', title: '폭염에 알아두면 좋은 무더위쉼터에 관한 모든 것', image: require('../../assets/images/heatwave1.png') },
-    { id: '2', title: '폭염 3대 취약분야 행동요령', image: require('../../assets/images/heatwave1.png') },
-    { id: '3', title: '폭염 대비 이렇게 행동하세요!', image: require('../../assets/images/heatwave1.png') },
-    { id: '4', title: '폭염 시 행동요령', image: require('../../assets/images/heatwave1.png') },
-  ];
+  const fetchData = async (category: string) => {
+    setLoading(true);
+    try {
+      const response = await fetch(`http://211.188.51.4/card-news?cardNewsCategory=${category}`);
+      const result = await response.json();
+      if (result.isSuccess && result.results.cardNewsList) {
+        setData(result.results.cardNewsList);
+      } else {
+        console.error('Failed to load data:', result.message);
+      }
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData(selectedTab);
+  }, [selectedTab]);
 
   const renderItem = ({ item }: { item: ContentItem }) => (
     <TouchableOpacity
       style={styles.listItem}
       onPress={() => navigation.navigate('ContentDetail', { title: item.title })}
     >
-      <Image source={item.image} style={styles.itemImage} />
+      <Image source={{ uri: item.cardImageUrl }} style={styles.itemImage} />
       <Text style={styles.itemText}>{item.title}</Text>
     </TouchableOpacity>
   );
@@ -36,24 +52,28 @@ const ContentsList: React.FC<Props> = ({ navigation }) => {
     <View style={styles.container}>
       <View style={styles.menuTabs}>
         <TouchableOpacity
-          style={[styles.tab, selectedTab === '폭염' && styles.activeTab]}
-          onPress={() => setSelectedTab('폭염')}
+          style={[styles.tab, selectedTab === 'HOT' && styles.activeTab]}
+          onPress={() => setSelectedTab('HOT')}
         >
-          <Text style={[styles.tabText, selectedTab === '폭염' && styles.activeTabText]}>폭염</Text>
+          <Text style={[styles.tabText, selectedTab === 'HOT' && styles.activeTabText]}>폭염</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.tab, selectedTab === '한파' && styles.activeTab]}
-          onPress={() => setSelectedTab('한파')}
+          style={[styles.tab, selectedTab === 'COLD' && styles.activeTab]}
+          onPress={() => setSelectedTab('COLD')}
         >
-          <Text style={[styles.tabText, selectedTab === '한파' && styles.activeTabText]}>한파</Text>
+          <Text style={[styles.tabText, selectedTab === 'COLD' && styles.activeTabText]}>한파</Text>
         </TouchableOpacity>
       </View>
-      <FlatList
-        data={data}
-        renderItem={renderItem}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContainer}
-      />
+      {loading ? (
+        <Text style={styles.loadingText}>Loading...</Text>
+      ) : (
+        <FlatList
+          data={data}
+          renderItem={renderItem}
+          keyExtractor={(item) => item.cardNewsId.toString()}
+          contentContainerStyle={styles.listContainer}
+        />
+      )}
       <Footer />
     </View>
   );
@@ -109,6 +129,12 @@ const styles = StyleSheet.create({
     fontFamily: 'Pretendard-Bold',
     fontSize: 14,
     lineHeight: 21,
+  },
+  loadingText: {
+    textAlign: 'center',
+    marginTop: 20,
+    fontSize: 16,
+    color: '#8E9398',
   },
 });
 
