@@ -21,6 +21,8 @@ import NaverLogin from '@react-native-seoul/naver-login';
 import SearchScreen from './screens/SearhScreen';
 import SearchDetail from './screens/SearchDetail';
 import ReviewForm from './screens/ReviewForm';
+import messaging from '@react-native-firebase/messaging';
+import { storeFcmToken } from './services/storageService';
 
 const consumerKey = 'XQ774qjn0QvrLziS0efY';
 const consumerSecret = '6OIm7uvnU6';
@@ -43,7 +45,7 @@ export type RootStackParamList = {
   MyPage: undefined;
   ProfileEdit: undefined;
   MyReview: undefined;
-  ReviewForm: { placeId: number };
+  ReviewForm: {placeId: number};
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -61,11 +63,7 @@ const BackIcon = () => (
 );
 
 const CloseIcon = () => (
-  <Svg
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill="none">
+  <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
     <G clip-path="url(#clip0_325_1162)">
       <Path
         fill-rule="evenodd"
@@ -107,6 +105,28 @@ const App: React.FC = () => {
       console.error('Naver Login initialization failed:', error);
     }
   }, []);
+
+  const getFcmToken = async () => {
+    const token = await messaging().getToken();
+    if (token) {
+      console.log('FCM Token:', token);
+      await storeFcmToken(token);
+    } else {
+      console.log('토큰을 가져오는 데 실패했습니다.');
+    }
+  };
+
+  useEffect(() => {
+    getFcmToken();
+
+    const unsubscribe = messaging().onTokenRefresh(async (newToken) => {
+      console.log('새로운 FCM 토큰:', newToken);
+      await storeFcmToken(newToken);
+    });
+
+    return unsubscribe;
+  }, []);
+
   return (
     <SafeAreaView style={styles.container}>
       <NavigationContainer>
