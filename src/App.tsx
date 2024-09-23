@@ -39,7 +39,7 @@ export type RootStackParamList = {
   SearchScreen: undefined;
   SearchDetail: {placeId: number};
   ContentsList: undefined;
-  ContentDetail: {title: string};
+  ContentDetail: {title: string; cardNewsId: string};
   MyPage: undefined;
   ProfileEdit: undefined;
   MyReview: undefined;

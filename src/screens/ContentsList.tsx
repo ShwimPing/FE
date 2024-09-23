@@ -41,7 +41,7 @@ const ContentsList: React.FC<Props> = ({ navigation }) => {
   const renderItem = ({ item }: { item: ContentItem }) => (
     <TouchableOpacity
       style={styles.listItem}
-      onPress={() => navigation.navigate('ContentDetail', { title: item.title })}
+      onPress={() => navigation.navigate('ContentDetail', { title: item.title, cardNewsId: item.cardNewsId })}
     >
       <Image source={{ uri: item.cardImageUrl }} style={styles.itemImage} />
       <Text style={styles.itemText}>{item.title}</Text>
