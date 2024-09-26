@@ -356,7 +356,7 @@ const SearchScreen: React.FC<Props> = ({navigation}) => {
                 </View>
 
                 <Text style={styles.resultDetails}>
-                  {`${item.distance || 'N/A'} · ${
+                  {`${item.distance || 'N/A'}m · ${
                     item.address || '주소 없음'
                   } | ${item.hours || '운영시간 없음'}`}
                 </Text>

@@ -15,6 +15,8 @@ import NaverMapView, {Marker} from 'react-native-nmap';
 import Geolocation from 'react-native-geolocation-service';
 import axios from 'axios';
 import {NAVER_CLIENT_ID, NAVER_API_KEY} from '../../config';
+import {useNavigation, NavigationProp} from '@react-navigation/native';
+import { RootStackParamList } from '../App';
 
 const SEOUL_COORD = {
   latitude: 37.5665,
@@ -47,7 +49,11 @@ const MapComponent = () => {
   const [locationError, setLocationError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('TOGETHER');
   const [district, setDistrict] = useState<string>('');
-  const [markers, setMarkers] = useState<{latitude: number, longitude: number}[]>([]);
+  const [markers, setMarkers] = useState<
+  {latitude: number; longitude: number; placeId: number}[]
+>([]);
+
+const navigation = useNavigation<NavigationProp<RootStackParamList>>();
 
   const requestLocationPermission = useCallback(async () => {
     if (Platform.OS === 'android') {
@@ -116,10 +122,13 @@ const MapComponent = () => {
         const places = response.data.results.placeList || [];
 
         if (Array.isArray(places)) {
-          setMarkers(places.map((place: any) => ({
-            latitude: place.latitude,
-            longitude: place.longitude,
-          })));
+          setMarkers(
+            places.map((place: any) => ({
+              latitude: place.latitude,
+              longitude: place.longitude,
+              placeId: place.placeId,
+            })),
+          );
         } else {
           console.warn('Unexpected format: results.placeList is not an array.');
           setMarkers([]);
@@ -219,6 +228,10 @@ const MapComponent = () => {
     fetchDistrictName(latitude, longitude);
   };
 
+  const handleMarkerClick = (placeId: number) => {
+    navigation.navigate('SearchDetail', {placeId});
+  };
+
   const handleCameraChange = (event: {latitude: number, longitude: number}) => {
     const {latitude, longitude} = event;
 
@@ -257,7 +270,7 @@ const MapComponent = () => {
             key={index}
             coordinate={marker}
             pinColor="green"
-            onClick={() => console.warn(`마커 클릭: ${marker.latitude}, ${marker.longitude}`)}
+            onClick={() => handleMarkerClick(marker.placeId)} // placeId 전달
           />
         ))}
       </NaverMapView>
