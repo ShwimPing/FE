@@ -11,11 +11,11 @@ import {
   Alert,
 } from 'react-native';
 import Svg, {Path} from 'react-native-svg';
-import axios from 'axios';
+import axios from 'axios'; // AxiosError 가져오기
 import {useNavigation, NavigationProp} from '@react-navigation/native';
 import {RootStackParamList} from '../App';
 import {useRoute} from '@react-navigation/native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from '@react-native-async-storage/async-storage'; // AsyncStorage import
 
 const categoryColors: {[key: string]: string} = {
   TOGETHER: '#F3F5F7',

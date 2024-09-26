@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useState} from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import Svg, {Path, G, Defs, ClipPath, Rect} from 'react-native-svg';
-import {useNavigation} from '@react-navigation/native';
+import {useNavigation, useFocusEffect} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {RootStackParamList} from '../../App';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -27,20 +27,22 @@ const MyPage = () => {
   const [isPushEnabled, setIsPushEnabled] = useState(false);
   const [nickname, setNickname] = useState('');
 
-  useEffect(() => {
-    const fetchNickname = async () => {
-      try {
-        const storedNickname = await AsyncStorage.getItem('userNickname');
-        if (storedNickname) {
-          setNickname(storedNickname);
+  useFocusEffect(
+    React.useCallback(() => {
+      const fetchNickname = async (): Promise<void> => {  // 반환 타입 명시
+        try {
+          const storedNickname = await AsyncStorage.getItem('userNickname');
+          if (storedNickname) {
+            setNickname(storedNickname);
+          }
+        } catch (error) {
+          console.error('Failed to load nickname:', error);
         }
-      } catch (error) {
-        console.error('Failed to load nickname:', error);
-      }
-    };
+      };
 
-    fetchNickname();
-  }, []);
+      fetchNickname();
+    }, []),
+  );
 
   const toggleSwitch = () => setIsPushEnabled(previousState => !previousState);
 
