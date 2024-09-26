@@ -56,16 +56,23 @@ const MyPage = () => {
           text: '확인',
           onPress: async () => {
             try {
+              const token = await AsyncStorage.getItem('authToken');
+              if (!token) {
+                Alert.alert('오류', '인증 토큰이 없습니다. 다시 로그인해 주세요.');
+                return;
+              }
               const response = await axios.delete(
                 'http://211.188.51.4/auth/withdraw',
                 {
                   headers: {
                     'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
                   },
                 },
               );
 
               if (response.data.isSuccess) {
+                Alert.alert('성공', '회원탈퇴가 완료되었습니다.');
                 navigation.navigate('Login');
               } else {
                 Alert.alert(
