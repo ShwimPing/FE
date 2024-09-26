@@ -1,3 +1,4 @@
+/* eslint-disable no-trailing-spaces */
 import React, {useState} from 'react';
 import {
   View,
@@ -44,8 +45,51 @@ const MyPage = () => {
     }, []),
   );
 
-  const toggleSwitch = () => setIsPushEnabled(previousState => !previousState);
-
+  const toggleSwitch = async () => {
+    const newPushState = !isPushEnabled;
+    setIsPushEnabled(newPushState);
+  
+    try {
+      const token = await AsyncStorage.getItem('authToken');
+      if (!token) {
+        Alert.alert('오류', '인증 토큰이 없습니다. 다시 로그인해 주세요.');
+        return;
+      }
+  
+      const response = await axios.post(
+        'http://211.188.51.4/mypage/alarm',
+        {
+          isPushEnabled: newPushState,
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+  
+      if (response.data.isSuccess) {
+        console.log('푸시 알림 설정이 성공적으로 업데이트되었습니다.');
+      } else {
+        Alert.alert('오류', '푸시 알림 설정을 업데이트하지 못했습니다.');
+        setIsPushEnabled(!newPushState);
+      }
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        console.error('Axios error:', error.response?.data || error.message);
+        Alert.alert(
+          '오류',
+          '푸시 알림 설정 업데이트 중 오류가 발생했습니다. 다시 시도해 주세요.',
+        );
+      } else {
+        console.error('Unexpected error:', error);
+        Alert.alert('오류', '알 수 없는 오류가 발생했습니다.');
+      }
+      setIsPushEnabled(!newPushState);
+    }
+  };
+  
   const handleWithdrawal = () => {
     Alert.alert(
       '회원탈퇴',
@@ -159,7 +203,7 @@ const MyPage = () => {
               value={isPushEnabled}
               onValueChange={toggleSwitch}
               thumbColor="#FFFFFF"
-              trackColor={{false: '#767577', true: '#FF6C3E'}}
+              trackColor={{false: '#767577', true: '#222'}}
               ios_backgroundColor="#767577"
               style={{transform: [{scaleX: 1.3}, {scaleY: 1.3}]}}
             />
