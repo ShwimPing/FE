@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-shadow */
 import React, {useEffect, useState} from 'react';
 import {
@@ -7,12 +8,14 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
+  Alert,
 } from 'react-native';
 import Svg, {Path} from 'react-native-svg';
 import axios from 'axios';
 import {useNavigation, NavigationProp} from '@react-navigation/native';
 import {RootStackParamList} from '../App';
 import {useRoute} from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const categoryColors: {[key: string]: string} = {
   TOGETHER: '#F3F5F7',
@@ -58,6 +61,38 @@ const SearchDetail: React.FC = () => {
   const [placeDetail, setPlaceDetail] = useState<PlaceDetail | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isBookmarked, setIsBookmarked] = useState(false);
+
+  const fetchBookmarkStatus = async () => {
+    try {
+      const authToken = await AsyncStorage.getItem('authToken');
+      if (!authToken) {
+        Alert.alert('인증 오류', '로그인이 필요합니다.');
+        navigation.navigate('Login');
+        return;
+      }
+
+      const response = await axios.get(
+        `http://211.188.51.4/bookmarks/${placeId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+          },
+        },
+      );
+
+      console.log('Bookmark response:', response.data);
+
+      if (response.data.isSuccess) {
+        setIsBookmarked(response.data.results?.isBookmarked ?? false);
+      } else {
+        Alert.alert('북마크 상태를 불러올 수 없습니다.');
+      }
+    } catch (error) {
+      console.error('북마크 상태 가져오기 실패:', error);
+      Alert.alert('북마크 상태를 가져오는 중 오류가 발생했습니다.');
+    }
+  };
 
   useEffect(() => {
     const fetchPlaceDetail = async () => {
@@ -71,6 +106,7 @@ const SearchDetail: React.FC = () => {
         const {placeDetail, recentReviews} = response.data.results;
         setPlaceDetail(placeDetail);
         setReviews(recentReviews);
+        fetchBookmarkStatus();
       } catch (error) {
         console.error('Error fetching place details:', error);
       } finally {
@@ -80,6 +116,36 @@ const SearchDetail: React.FC = () => {
 
     fetchPlaceDetail();
   }, [placeId]);
+
+  // const toggleBookmark = async () => {
+  //   try {
+  //     const authToken = await AsyncStorage.getItem('authToken');
+  //     if (!authToken) {
+  //       Alert.alert('인증 오류', '로그인이 필요합니다.');
+  //       navigation.navigate('Login');
+  //       return;
+  //     }
+
+  //     const response = await axios.get(`http://211.188.51.4/bookmarks/${placeId}`, {
+  //       headers: {
+  //         Authorization: `Bearer ${authToken}`,
+  //       },
+  //     });
+
+  //     console.log('Bookmark toggle response:', response.data);
+
+  //     if (response.data.isSuccess) {
+  //       setIsBookmarked(!isBookmarked);
+  //       Alert.alert(isBookmarked ? '북마크가 삭제되었습니다.' : '북마크가 추가되었습니다.');
+  //     } else {
+  //       Alert.alert('북마크 처리 중 문제가 발생했습니다.');
+  //     }
+  //   } catch (error) {
+  //     console.error('북마크 처리 실패:', error);
+  //     Alert.alert('북마크 처리 중 오류가 발생했습니다.');
+  //   }
+  // };
+
 
   if (loading) {
     return (
@@ -235,18 +301,17 @@ const SearchDetail: React.FC = () => {
       </ScrollView>
 
       <View style={styles.footer}>
-        <View style={styles.footerLeft}>
+        <TouchableOpacity onPress={toggleBookmark} style={styles.footerLeft}>
           <Svg width="24" height="25" viewBox="0 0 24 25" fill="none">
             <Path
               d="M5 8.425C5 6.74484 5 5.90476 5.32698 5.26303C5.6146 4.69854 6.07354 4.2396 6.63803 3.95198C7.27976 3.625 8.11984 3.625 9.8 3.625H14.2C15.8802 3.625 16.7202 3.625 17.362 3.95198C17.9265 4.2396 18.3854 4.69854 18.673 5.26303C19 5.90476 19 6.74484 19 8.425V21.625L12 17.625L5 21.625V8.425Z"
-              stroke="#1A1A1B"
+              stroke={isBookmarked ? '#000' : '#1A1A1B'} // 북마크 여부에 따라 색상 변경
               strokeWidth="1.8"
               strokeLinecap="round"
               strokeLinejoin="round"
             />
           </Svg>
-          <Text style={styles.footerText}>34</Text>
-        </View>
+        </TouchableOpacity>
         <TouchableOpacity
           style={styles.footerButton}
           onPress={() => navigation.navigate('ReviewForm', {placeId})}>
@@ -403,7 +468,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 12,
+    gap: 23,
     backgroundColor: '#FFF',
   },
   footerLeft: {
