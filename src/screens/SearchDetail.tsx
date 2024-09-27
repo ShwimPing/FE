@@ -11,7 +11,7 @@ import {
   Alert,
 } from 'react-native';
 import Svg, {Path} from 'react-native-svg';
-import axios from 'axios'; // AxiosError 가져오기
+import axios from 'axios';
 import {useNavigation, NavigationProp} from '@react-navigation/native';
 import {RootStackParamList} from '../App';
 import {useRoute} from '@react-navigation/native';
@@ -81,12 +81,12 @@ const SearchDetail: React.FC = () => {
         },
       );
 
-      console.log('Bookmark response:', response.data);
+      // console.log('Bookmark response:', response.data);
 
-      if (response.data.isSuccess) {
-        setIsBookmarked(response.data.results?.isBookmarked ?? false);
+      if (response.data.isSuccess && response.data.results === '북마크 저장 성공') {
+        setIsBookmarked(true);
       } else {
-        Alert.alert('북마크 상태를 불러올 수 없습니다.');
+        setIsBookmarked(false);
       }
     } catch (error) {
       console.error('북마크 상태 가져오기 실패:', error);
@@ -117,34 +117,37 @@ const SearchDetail: React.FC = () => {
     fetchPlaceDetail();
   }, [placeId]);
 
-  // const toggleBookmark = async () => {
-  //   try {
-  //     const authToken = await AsyncStorage.getItem('authToken');
-  //     if (!authToken) {
-  //       Alert.alert('인증 오류', '로그인이 필요합니다.');
-  //       navigation.navigate('Login');
-  //       return;
-  //     }
+  const toggleBookmark = async () => {
+    try {
+      const authToken = await AsyncStorage.getItem('authToken');
+      if (!authToken) {
+        Alert.alert('인증 오류', '로그인이 필요합니다.');
+        navigation.navigate('Login');
+        return;
+      }
 
-  //     const response = await axios.get(`http://211.188.51.4/bookmarks/${placeId}`, {
-  //       headers: {
-  //         Authorization: `Bearer ${authToken}`,
-  //       },
-  //     });
+      const response = await axios.get(`http://211.188.51.4/bookmarks/${placeId}`, {
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+        },
+      });
 
-  //     console.log('Bookmark toggle response:', response.data);
-
-  //     if (response.data.isSuccess) {
-  //       setIsBookmarked(!isBookmarked);
-  //       Alert.alert(isBookmarked ? '북마크가 삭제되었습니다.' : '북마크가 추가되었습니다.');
-  //     } else {
-  //       Alert.alert('북마크 처리 중 문제가 발생했습니다.');
-  //     }
-  //   } catch (error) {
-  //     console.error('북마크 처리 실패:', error);
-  //     Alert.alert('북마크 처리 중 오류가 발생했습니다.');
-  //   }
-  // };
+      if (response.data.isSuccess) {
+        if (response.data.results === '북마크 저장 성공') {
+          setIsBookmarked(true);
+          // Alert.alert('북마크가 추가되었습니다.');
+        } else if (response.data.results === '북마크 삭제 성공') {
+          setIsBookmarked(false);
+          // Alert.alert('북마크가 삭제되었습니다.');
+        }
+      } else {
+        Alert.alert('북마크 처리 중 문제가 발생했습니다.');
+      }
+    } catch (error) {
+      console.error('북마크 처리 실패:', error);
+      Alert.alert('북마크 처리 중 오류가 발생했습니다.');
+    }
+  };
 
 
   if (loading) {
@@ -302,13 +305,14 @@ const SearchDetail: React.FC = () => {
 
       <View style={styles.footer}>
         <TouchableOpacity onPress={toggleBookmark} style={styles.footerLeft}>
-          <Svg width="24" height="25" viewBox="0 0 24 25" fill="none">
+          <Svg width="34" height="35" viewBox="0 0 24 25" fill="none">
             <Path
               d="M5 8.425C5 6.74484 5 5.90476 5.32698 5.26303C5.6146 4.69854 6.07354 4.2396 6.63803 3.95198C7.27976 3.625 8.11984 3.625 9.8 3.625H14.2C15.8802 3.625 16.7202 3.625 17.362 3.95198C17.9265 4.2396 18.3854 4.69854 18.673 5.26303C19 5.90476 19 6.74484 19 8.425V21.625L12 17.625L5 21.625V8.425Z"
-              stroke={isBookmarked ? '#000' : '#1A1A1B'} // 북마크 여부에 따라 색상 변경
+              stroke={isBookmarked ? '#000' : '#1A1A1B'}
               strokeWidth="1.8"
               strokeLinecap="round"
               strokeLinejoin="round"
+              fill={isBookmarked ? '#222' : 'none'}
             />
           </Svg>
         </TouchableOpacity>
