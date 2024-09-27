@@ -256,51 +256,59 @@ const SearchDetail: React.FC = () => {
 
         <Text style={styles.reviewTitle}>리뷰</Text>
 
-        <View style={styles.averageRatingContainer}>
-          <Text style={styles.averageRatingText}>
-            {placeDetail.rating.toFixed(1)}
-          </Text>
-          {renderStars(placeDetail.rating)}
-        </View>
+        {reviews.length > 0 ? (
+        <>
+          <View style={styles.averageRatingContainer}>
+            <Text style={styles.averageRatingText}>
+              {placeDetail.rating.toFixed(1)}
+            </Text>
+            {renderStars(placeDetail.rating)}
+          </View>
 
-        {reviews.map(review => (
-          <View key={review.reviewId} style={styles.reviewContainer}>
-            <View style={styles.reviewHeader}>
-              <View style={styles.reviewUser}>
-                <Image
-                  source={require('../../assets/images/profile.png')}
-                  style={styles.profileImage}
-                />
-                <View>
-                  <Text style={styles.userName}>{review.writer}</Text>
-                  <View style={styles.userRating}>
-                    {[...Array(5)].map((_, i) => (
-                      <Svg
-                        key={i}
-                        width="14"
-                        height="12"
-                        viewBox="0 0 14 12"
-                        fill="none">
-                        <Path
-                          d="M7.00003 10.0496L10.0448 11.8912C10.6024 12.2287 11.2847 11.7298 11.138 11.0988L10.331 7.63582L13.0236 5.3027C13.5151 4.87717 13.251 4.07011 12.6054 4.01875L9.06168 3.71794L7.67502 0.445713C7.42556 -0.148571 6.57449 -0.148571 6.32504 0.445713L4.93837 3.71061L1.39468 4.01142C0.749039 4.06278 0.484913 4.86983 0.976481 5.29536L3.6691 7.62848L2.86205 11.0915C2.71531 11.7224 3.39764 12.2213 3.95524 11.8838L7.00003 10.0496Z"
-                          fill={i < review.rating ? '#FFD643' : '#E8E8E8'}
-                        />
-                      </Svg>
-                    ))}
+          {reviews.map(review => (
+            <View key={review.reviewId} style={styles.reviewContainer}>
+              <View style={styles.reviewHeader}>
+                <View style={styles.reviewUser}>
+                  <Image
+                    source={require('../../assets/images/profile.png')}
+                    style={styles.profileImage}
+                  />
+                  <View>
+                    <Text style={styles.userName}>{review.writer}</Text>
+                    <View style={styles.userRating}>
+                      {[...Array(5)].map((_, i) => (
+                        <Svg
+                          key={i}
+                          width="14"
+                          height="12"
+                          viewBox="0 0 14 12"
+                          fill="none">
+                          <Path
+                            d="M7.00003 10.0496L10.0448 11.8912C10.6024 12.2287 11.2847 11.7298 11.138 11.0988L10.331 7.63582L13.0236 5.3027C13.5151 4.87717 13.251 4.07011 12.6054 4.01875L9.06168 3.71794L7.67502 0.445713C7.42556 -0.148571 6.57449 -0.148571 6.32504 0.445713L4.93837 3.71061L1.39468 4.01142C0.749039 4.06278 0.484913 4.86983 0.976481 5.29536L3.6691 7.62848L2.86205 11.0915C2.71531 11.7224 3.39764 12.2213 3.95524 11.8838L7.00003 10.0496Z"
+                            fill={i < review.rating ? '#FFD643' : '#E8E8E8'}
+                          />
+                        </Svg>
+                      ))}
+                    </View>
                   </View>
                 </View>
+                <Text style={styles.reviewDate}>{review.date}</Text>
               </View>
-              <Text style={styles.reviewDate}>{review.date}</Text>
+              <Text style={styles.reviewContent}>{review.content}</Text>
+              {review.reviewImageUrl ? (
+                <Image
+                  source={{uri: review.reviewImageUrl}}
+                  style={styles.reviewImage}
+                />
+              ) : null}
             </View>
-            <Text style={styles.reviewContent}>{review.content}</Text>
-            {review.reviewImageUrl ? (
-              <Image
-                source={{uri: review.reviewImageUrl}}
-                style={styles.reviewImage}
-              />
-            ) : null}
-          </View>
-        ))}
+          ))}
+        </>
+      ) : (
+        <View style={styles.noReviewsContainer}>
+          <Text style={styles.noReviewsText}>아직 작성한 리뷰가 없어요</Text>
+        </View>
+      )}
       </ScrollView>
 
       <View style={styles.footer}>
@@ -463,6 +471,17 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     backgroundColor: '#E8E8E8',
     marginBottom: 28,
+  },
+  noReviewsContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 165,
+  },
+  noReviewsText: {
+    fontSize: 16,
+    color: '#1A1A1B',
+    fontFamily: 'Pretendard-Bold',
   },
   footer: {
     width: '100%',
