@@ -11,7 +11,7 @@ import {
   Alert,
 } from 'react-native';
 import Svg, {Path} from 'react-native-svg';
-import axios from 'axios'; // AxiosError 가져오기
+import axios from 'axios';
 import {useNavigation, NavigationProp} from '@react-navigation/native';
 import {RootStackParamList} from '../App';
 import {useRoute} from '@react-navigation/native';
@@ -81,12 +81,12 @@ const SearchDetail: React.FC = () => {
         },
       );
 
-      console.log('Bookmark response:', response.data);
+      // console.log('Bookmark response:', response.data);
 
-      if (response.data.isSuccess) {
-        setIsBookmarked(response.data.results?.isBookmarked ?? false);
+      if (response.data.isSuccess && response.data.results === '북마크 저장 성공') {
+        setIsBookmarked(true);
       } else {
-        Alert.alert('북마크 상태를 불러올 수 없습니다.');
+        setIsBookmarked(false);
       }
     } catch (error) {
       console.error('북마크 상태 가져오기 실패:', error);
@@ -117,34 +117,37 @@ const SearchDetail: React.FC = () => {
     fetchPlaceDetail();
   }, [placeId]);
 
-  // const toggleBookmark = async () => {
-  //   try {
-  //     const authToken = await AsyncStorage.getItem('authToken');
-  //     if (!authToken) {
-  //       Alert.alert('인증 오류', '로그인이 필요합니다.');
-  //       navigation.navigate('Login');
-  //       return;
-  //     }
+  const toggleBookmark = async () => {
+    try {
+      const authToken = await AsyncStorage.getItem('authToken');
+      if (!authToken) {
+        Alert.alert('인증 오류', '로그인이 필요합니다.');
+        navigation.navigate('Login');
+        return;
+      }
 
-  //     const response = await axios.get(`http://211.188.51.4/bookmarks/${placeId}`, {
-  //       headers: {
-  //         Authorization: `Bearer ${authToken}`,
-  //       },
-  //     });
+      const response = await axios.get(`http://211.188.51.4/bookmarks/${placeId}`, {
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+        },
+      });
 
-  //     console.log('Bookmark toggle response:', response.data);
-
-  //     if (response.data.isSuccess) {
-  //       setIsBookmarked(!isBookmarked);
-  //       Alert.alert(isBookmarked ? '북마크가 삭제되었습니다.' : '북마크가 추가되었습니다.');
-  //     } else {
-  //       Alert.alert('북마크 처리 중 문제가 발생했습니다.');
-  //     }
-  //   } catch (error) {
-  //     console.error('북마크 처리 실패:', error);
-  //     Alert.alert('북마크 처리 중 오류가 발생했습니다.');
-  //   }
-  // };
+      if (response.data.isSuccess) {
+        if (response.data.results === '북마크 저장 성공') {
+          setIsBookmarked(true);
+          // Alert.alert('북마크가 추가되었습니다.');
+        } else if (response.data.results === '북마크 삭제 성공') {
+          setIsBookmarked(false);
+          // Alert.alert('북마크가 삭제되었습니다.');
+        }
+      } else {
+        Alert.alert('북마크 처리 중 문제가 발생했습니다.');
+      }
+    } catch (error) {
+      console.error('북마크 처리 실패:', error);
+      Alert.alert('북마크 처리 중 오류가 발생했습니다.');
+    }
+  };
 
 
   if (loading) {
@@ -253,62 +256,71 @@ const SearchDetail: React.FC = () => {
 
         <Text style={styles.reviewTitle}>리뷰</Text>
 
-        <View style={styles.averageRatingContainer}>
-          <Text style={styles.averageRatingText}>
-            {placeDetail.rating.toFixed(1)}
-          </Text>
-          {renderStars(placeDetail.rating)}
-        </View>
+        {reviews.length > 0 ? (
+        <>
+          <View style={styles.averageRatingContainer}>
+            <Text style={styles.averageRatingText}>
+              {placeDetail.rating.toFixed(1)}
+            </Text>
+            {renderStars(placeDetail.rating)}
+          </View>
 
-        {reviews.map(review => (
-          <View key={review.reviewId} style={styles.reviewContainer}>
-            <View style={styles.reviewHeader}>
-              <View style={styles.reviewUser}>
-                <Image
-                  source={require('../../assets/images/profile.png')}
-                  style={styles.profileImage}
-                />
-                <View>
-                  <Text style={styles.userName}>{review.writer}</Text>
-                  <View style={styles.userRating}>
-                    {[...Array(5)].map((_, i) => (
-                      <Svg
-                        key={i}
-                        width="14"
-                        height="12"
-                        viewBox="0 0 14 12"
-                        fill="none">
-                        <Path
-                          d="M7.00003 10.0496L10.0448 11.8912C10.6024 12.2287 11.2847 11.7298 11.138 11.0988L10.331 7.63582L13.0236 5.3027C13.5151 4.87717 13.251 4.07011 12.6054 4.01875L9.06168 3.71794L7.67502 0.445713C7.42556 -0.148571 6.57449 -0.148571 6.32504 0.445713L4.93837 3.71061L1.39468 4.01142C0.749039 4.06278 0.484913 4.86983 0.976481 5.29536L3.6691 7.62848L2.86205 11.0915C2.71531 11.7224 3.39764 12.2213 3.95524 11.8838L7.00003 10.0496Z"
-                          fill={i < review.rating ? '#FFD643' : '#E8E8E8'}
-                        />
-                      </Svg>
-                    ))}
+          {reviews.map(review => (
+            <View key={review.reviewId} style={styles.reviewContainer}>
+              <View style={styles.reviewHeader}>
+                <View style={styles.reviewUser}>
+                  <Image
+                    source={require('../../assets/images/profile.png')}
+                    style={styles.profileImage}
+                  />
+                  <View>
+                    <Text style={styles.userName}>{review.writer}</Text>
+                    <View style={styles.userRating}>
+                      {[...Array(5)].map((_, i) => (
+                        <Svg
+                          key={i}
+                          width="14"
+                          height="12"
+                          viewBox="0 0 14 12"
+                          fill="none">
+                          <Path
+                            d="M7.00003 10.0496L10.0448 11.8912C10.6024 12.2287 11.2847 11.7298 11.138 11.0988L10.331 7.63582L13.0236 5.3027C13.5151 4.87717 13.251 4.07011 12.6054 4.01875L9.06168 3.71794L7.67502 0.445713C7.42556 -0.148571 6.57449 -0.148571 6.32504 0.445713L4.93837 3.71061L1.39468 4.01142C0.749039 4.06278 0.484913 4.86983 0.976481 5.29536L3.6691 7.62848L2.86205 11.0915C2.71531 11.7224 3.39764 12.2213 3.95524 11.8838L7.00003 10.0496Z"
+                            fill={i < review.rating ? '#FFD643' : '#E8E8E8'}
+                          />
+                        </Svg>
+                      ))}
+                    </View>
                   </View>
                 </View>
+                <Text style={styles.reviewDate}>{review.date}</Text>
               </View>
-              <Text style={styles.reviewDate}>{review.date}</Text>
+              <Text style={styles.reviewContent}>{review.content}</Text>
+              {review.reviewImageUrl ? (
+                <Image
+                  source={{uri: review.reviewImageUrl}}
+                  style={styles.reviewImage}
+                />
+              ) : null}
             </View>
-            <Text style={styles.reviewContent}>{review.content}</Text>
-            {review.reviewImageUrl ? (
-              <Image
-                source={{uri: review.reviewImageUrl}}
-                style={styles.reviewImage}
-              />
-            ) : null}
-          </View>
-        ))}
+          ))}
+        </>
+      ) : (
+        <View style={styles.noReviewsContainer}>
+          <Text style={styles.noReviewsText}>아직 작성한 리뷰가 없어요</Text>
+        </View>
+      )}
       </ScrollView>
 
       <View style={styles.footer}>
         <TouchableOpacity onPress={toggleBookmark} style={styles.footerLeft}>
-          <Svg width="24" height="25" viewBox="0 0 24 25" fill="none">
+          <Svg width="34" height="35" viewBox="0 0 24 25" fill="none">
             <Path
               d="M5 8.425C5 6.74484 5 5.90476 5.32698 5.26303C5.6146 4.69854 6.07354 4.2396 6.63803 3.95198C7.27976 3.625 8.11984 3.625 9.8 3.625H14.2C15.8802 3.625 16.7202 3.625 17.362 3.95198C17.9265 4.2396 18.3854 4.69854 18.673 5.26303C19 5.90476 19 6.74484 19 8.425V21.625L12 17.625L5 21.625V8.425Z"
-              stroke={isBookmarked ? '#000' : '#1A1A1B'} // 북마크 여부에 따라 색상 변경
+              stroke={isBookmarked ? '#000' : '#1A1A1B'}
               strokeWidth="1.8"
               strokeLinecap="round"
               strokeLinejoin="round"
+              fill={isBookmarked ? '#222' : 'none'}
             />
           </Svg>
         </TouchableOpacity>
@@ -459,6 +471,17 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     backgroundColor: '#E8E8E8',
     marginBottom: 28,
+  },
+  noReviewsContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 165,
+  },
+  noReviewsText: {
+    fontSize: 16,
+    color: '#1A1A1B',
+    fontFamily: 'Pretendard-Bold',
   },
   footer: {
     width: '100%',
