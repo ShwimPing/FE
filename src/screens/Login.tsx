@@ -53,11 +53,14 @@ const Login: React.FC<Props> = ({navigation}) => {
     }
   };
 
-
   return (
     <View style={styles.container}>
       <View style={styles.logoContainer}>
-        <Text style={styles.logoText}>LOGO</Text>
+        <Image
+          source={require('../../assets/images/logo.png')}
+          style={styles.logoImage}
+          resizeMode="contain"
+        />
       </View>
 
       <TextInput
@@ -120,14 +123,13 @@ const styles = StyleSheet.create({
   logoContainer: {
     width: 100,
     height: 100,
-    backgroundColor: '#ddd',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 52,
   },
-  logoText: {
-    fontSize: 20,
-    color: '#000',
+  logoImage: {
+    width: 100,
+    height: 100,
   },
   input: {
     display: 'flex',

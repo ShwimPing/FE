@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import React, {useEffect, useState} from 'react';
-import {View, Text, TouchableOpacity, StyleSheet, Alert} from 'react-native';
+import {View, Text, TouchableOpacity, StyleSheet, Alert, Image} from 'react-native';
 import Svg, {Path, G, ClipPath, Defs, Rect} from 'react-native-svg';
 import {useNavigation} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
@@ -63,7 +63,11 @@ const Splash = () => {
   return (
     <View style={styles.container}>
       <View style={styles.logoContainer}>
-        <Text style={styles.logoText}>LOGO</Text>
+        <Image
+          source={require('../../assets/images/logo.png')}
+          style={styles.logoImage}
+          resizeMode="contain"
+        />
       </View>
 
       <TouchableOpacity style={styles.naverButton} onPress={loginWithNaver}>
@@ -137,14 +141,13 @@ const styles = StyleSheet.create({
   logoContainer: {
     width: 238,
     height: 238,
-    backgroundColor: '#ddd',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 82,
   },
-  logoText: {
-    fontSize: 20,
-    color: '#000',
+  logoImage: {
+    width: 200,
+    height: 200,
   },
   naverButton: {
     display: 'flex',
