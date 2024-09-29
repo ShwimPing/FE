@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-
 import React, {useState, useEffect} from 'react';
 import {
   View,
@@ -7,10 +6,22 @@ import {
   StyleSheet,
   FlatList,
   ActivityIndicator,
+  SafeAreaView,
 } from 'react-native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Svg, {Path} from 'react-native-svg';
+
+type Bookmark = {
+  bookMarkId: number;
+  name: string;
+  address: string;
+  category: string;
+  openTime: string;
+  closeTime: string;
+  rating: number;
+  reviewCount: number;
+};
 
 const categoryMapToKorean: {[key: string]: string} = {
   TOGETHER: '기후동행쉼터',
@@ -28,17 +39,6 @@ const categoryColors: {[key: string]: string} = {
   LIBRARY: '#E0F4FD',
   COLD: '#E8EAF6',
   SUBWAY: '#EDE7F6',
-};
-
-type Bookmark = {
-  bookMarkId: number;
-  name: string;
-  address: string;
-  category: string;
-  openTime: string;
-  closeTime: string;
-  rating: number;
-  reviewCount: number;
 };
 
 const MyBookmark = () => {
@@ -101,46 +101,46 @@ const MyBookmark = () => {
     }
   };
 
-  const renderBookmark = ({item}: {item: Bookmark}) => (
-    <View key={item.bookMarkId} style={styles.bookmarkContainer}>
-      <View
-        style={[
-          styles.categoryBox,
-          {backgroundColor: categoryColors[item.category] || '#f9f9f9'},
-        ]}>
-        <Text style={styles.categoryText}>
-          {categoryMapToKorean[item.category]}
-        </Text>
-      </View>
+  const renderBookmark = ({item}: {item: Bookmark}) => {
+    // console.log(item);
 
-      <Text style={styles.name}>{item.name}</Text>
+    return (
+      <View key={item.bookMarkId} style={styles.bookmarkContainer}>
+        <View
+          style={[
+            styles.categoryBox,
+            {backgroundColor: categoryColors[item.category] || '#f9f9f9'},
+          ]}>
+          <Text style={styles.categoryText}>
+            {categoryMapToKorean[item.category]}
+          </Text>
+        </View>
 
-      <View style={styles.ratingContainer}>
-        <Svg
-          width="14"
-          height="13"
-          viewBox="0 0 14 13"
-          fill="none">
-          <Path
-            d="M6.99978 10.4246L10.0446 12.2662C10.6022 12.6037 11.2845 12.1048 11.1378 11.4738L10.3307 8.01082L13.0233 5.6777C13.5149 5.25217 13.2508 4.44511 12.6051 4.39375L9.06144 4.09294L7.67477 0.820713C7.42532 0.226429 6.57425 0.226429 6.32479 0.820713L4.93813 4.08561L1.39444 4.38642C0.748795 4.43778 0.484668 5.24483 0.976237 5.67036L3.66886 8.00348L2.86181 11.4665C2.71507 12.0974 3.39739 12.5963 3.95499 12.2588L6.99978 10.4246Z"
-            fill="#FFD643"
-          />
-        </Svg>
-        <Text style={styles.ratingText}>{item.rating.toFixed(1)}</Text>
-        <Text style={styles.reviewCountText}>({item.reviewCount})</Text>
-      </View>
+        <Text style={styles.name}>{item.name}</Text>
 
-      <View style={styles.detailContainer}>
-        <Text style={styles.detailText}>65m</Text>
-        <Text style={styles.dot}>•</Text>
-        <Text style={styles.detailText}>{item.address}</Text>
-        <Text style={styles.detailText}>|</Text>
-        <Text style={styles.detailText}>
-          {item.openTime}~{item.closeTime}
-        </Text>
+        <View style={styles.ratingContainer}>
+          <Svg width="14" height="13" viewBox="0 0 14 13" fill="none">
+            <Path
+              d="M6.99978 10.4246L10.0446 12.2662C10.6022 12.6037 11.2845 12.1048 11.1378 11.4738L10.3307 8.01082L13.0233 5.6777C13.5149 5.25217 13.2508 4.44511 12.6051 4.39375L9.06144 4.09294L7.67477 0.820713C7.42532 0.226429 6.57425 0.226429 6.32479 0.820713L4.93813 4.08561L1.39444 4.38642C0.748795 4.43778 0.484668 5.24483 0.976237 5.67036L3.66886 8.00348L2.86181 11.4665C2.71507 12.0974 3.39739 12.5963 3.95499 12.2588L6.99978 10.4246Z"
+              fill="#FFD643"
+            />
+          </Svg>
+          <Text style={styles.ratingText}>{item.rating.toFixed(1)}</Text>
+          <Text style={styles.reviewCountText}>({item.reviewCount})</Text>
+        </View>
+
+        <View style={styles.detailContainer}>
+          <Text style={styles.detailText}>65m</Text>
+          <Text style={styles.dot}>•</Text>
+          <Text style={styles.detailText}>{item.address}</Text>
+          <Text style={styles.detailText}>|</Text>
+          <Text style={styles.detailText}>
+            {item.openTime}~{item.closeTime}
+          </Text>
+        </View>
       </View>
-    </View>
-  );
+    );
+  };
 
   if (loading) {
     return (
@@ -151,23 +151,29 @@ const MyBookmark = () => {
   }
 
   return (
-    <FlatList
-      data={bookmarks}
-      renderItem={renderBookmark}
-      keyExtractor={item => item.bookMarkId.toString()}
-      onEndReached={handleLoadMore}
-      onEndReachedThreshold={0.5}
-      ListFooterComponent={
-        isLoadingMore ? (
-          <ActivityIndicator size="small" color="#0000ff" />
-        ) : null
-      }
-      contentContainerStyle={styles.listContentContainer}
-    />
+    <SafeAreaView style={styles.container}>
+      <FlatList
+        data={bookmarks}
+        renderItem={renderBookmark}
+        keyExtractor={item => item.bookMarkId.toString()}
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={
+          isLoadingMore ? (
+            <ActivityIndicator size="small" color="#0000ff" />
+          ) : null
+        }
+        contentContainerStyle={styles.listContentContainer}
+      />
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
   listContentContainer: {
     paddingVertical: 16,
     paddingHorizontal: 12,
@@ -177,6 +183,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#fff',
   },
   bookmarkContainer: {
     display: 'flex',
@@ -249,4 +256,3 @@ export default MyBookmark;
 function alert(arg0: string) {
   throw new Error('Function not implemented.');
 }
-
