@@ -17,6 +17,7 @@ import ContentDetail from './screens/ContentDetail';
 import MyPage from './screens/MyPage/MyPage';
 import ProfileEdit from './screens/MyPage/ProfileEdit';
 import MyReview from './screens/MyPage/MyReview';
+import MyBookmark from './screens/MyPage/MyBookmark';
 import NaverLogin from '@react-native-seoul/naver-login';
 import SearchScreen from './screens/SearhScreen';
 import SearchDetail from './screens/SearchDetail';
@@ -45,6 +46,7 @@ export type RootStackParamList = {
   MyPage: undefined;
   ProfileEdit: undefined;
   MyReview: undefined;
+  MyBookmark: undefined;
   ReviewForm: {placeId: number};
 };
 
@@ -385,6 +387,29 @@ const App: React.FC = () => {
             options={({navigation}) => ({
               headerShown: true,
               headerTitle: '내 리뷰',
+              headerTitleAlign: 'center',
+              headerShadowVisible: false,
+              headerTitleStyle: {
+                color: '#1A1A1B',
+                fontFamily: 'Pretendard-Bold',
+                fontSize: 14,
+                fontStyle: 'normal',
+                lineHeight: 21,
+                textAlign: 'center',
+              },
+              headerLeft: () => (
+                <TouchableOpacity onPress={() => navigation.goBack()}>
+                  <BackIcon />
+                </TouchableOpacity>
+              ),
+            })}
+          />
+          <Stack.Screen
+            name="MyBookmark"
+            component={MyBookmark}
+            options={({navigation}) => ({
+              headerShown: true,
+              headerTitle: '북마크',
               headerTitleAlign: 'center',
               headerShadowVisible: false,
               headerTitleStyle: {
