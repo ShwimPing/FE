@@ -1,11 +1,19 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import React, {useEffect, useState} from 'react';
-import {View, Text, TouchableOpacity, StyleSheet, Alert, Image} from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  Image,
+} from 'react-native';
 import Svg, {Path, G, ClipPath, Defs, Rect} from 'react-native-svg';
 import {useNavigation} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {RootStackParamList} from '../App';
-import NaverLogin, {NaverLoginResponse} from '@react-native-seoul/naver-login';
+import NaverLogin from '@react-native-seoul/naver-login';
 import axios from 'axios';
 
 type SplashScreenNavigationProp = NativeStackNavigationProp<
@@ -34,10 +42,21 @@ const Splash = () => {
       const {successResponse, failureResponse} = await NaverLogin.login();
 
       if (successResponse) {
-        const authCode = successResponse.accessToken;
-        Alert.alert('로그인 성공', `액세스 토큰: ${authCode}`);
-        await postToBackend(authCode);
-        navigation.navigate('Home');
+        const accessToken = successResponse.accessToken;
+        Alert.alert('로그인 성공', `액세스 토큰: ${accessToken}`);
+
+        try {
+          await AsyncStorage.setItem('accessToken', accessToken);
+
+          await postToBackend(accessToken);
+          navigation.navigate('Home');
+        } catch (error) {
+          console.error('백엔드 전송 에러:', error);
+          Alert.alert(
+            '백엔드 전송 실패',
+            '서버와 통신 중 문제가 발생했습니다.',
+          );
+        }
       } else if (failureResponse) {
         Alert.alert('로그인 실패', failureResponse.message);
       }
@@ -46,12 +65,19 @@ const Splash = () => {
     }
   };
 
-  const postToBackend = async (authCode: string) => {
+  const postToBackend = async (accessToken: string) => {
     try {
+      console.log('전송할 데이터:', {accessToken});
+
       const response = await axios.post(
-        'http://211.188.51.4/auth/login/naver',
+        'http://211.188.51.4/auth/login/NAVER',
         {
-          authCode,
+          accessToken,
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
         },
       );
       console.log('서버 응답:', response.data);
@@ -79,7 +105,7 @@ const Splash = () => {
             />
           </G>
           <Defs>
-            <ClipPath id="clip0_241_1067">
+            <ClipPath id="clip0_241_1067)">
               <Rect
                 width="16"
                 height="16"
