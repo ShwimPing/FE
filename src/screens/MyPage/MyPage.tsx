@@ -179,7 +179,7 @@ const MyPage = () => {
         </View>
         <View style={styles.menuSection}>
           <TouchableOpacity style={styles.menuItem}>
-            <Text style={styles.menuText}>북마크</Text>
+            <Text style={styles.menuText} onPress={() => navigation.navigate('MyBookmark')}>북마크</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.menuItem}

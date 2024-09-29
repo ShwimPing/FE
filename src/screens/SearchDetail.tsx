@@ -1,5 +1,5 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-shadow */
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, {useEffect, useState} from 'react';
 import {
   View,
@@ -61,52 +61,33 @@ const SearchDetail: React.FC = () => {
   const [placeDetail, setPlaceDetail] = useState<PlaceDetail | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isBookmarked, setIsBookmarked] = useState(false);
-
-  const fetchBookmarkStatus = async () => {
-    try {
-      const authToken = await AsyncStorage.getItem('authToken');
-      if (!authToken) {
-        Alert.alert('인증 오류', '로그인이 필요합니다.');
-        navigation.navigate('Login');
-        return;
-      }
-
-      const response = await axios.get(
-        `http://211.188.51.4/bookmarks/${placeId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${authToken}`,
-          },
-        },
-      );
-
-      // console.log('Bookmark response:', response.data);
-
-      if (response.data.isSuccess && response.data.results === '북마크 저장 성공') {
-        setIsBookmarked(true);
-      } else {
-        setIsBookmarked(false);
-      }
-    } catch (error) {
-      console.error('북마크 상태 가져오기 실패:', error);
-      Alert.alert('북마크 상태를 가져오는 중 오류가 발생했습니다.');
-    }
-  };
+  const [isBookmarked, setIsBookmarked] = useState(false); // 북마크 상태 관리
 
   useEffect(() => {
     const fetchPlaceDetail = async () => {
       try {
+        const authToken = await AsyncStorage.getItem('authToken');
+        if (!authToken) {
+          Alert.alert('인증 오류', '로그인이 필요합니다.');
+          navigation.navigate('Login');
+          return;
+        }
+
         const response = await axios.get('http://211.188.51.4/places/detail', {
           params: {
             placeId,
           },
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+          },
         });
 
+        // 서버 응답에서 장소 세부 정보 및 리뷰 가져오기
         const {placeDetail, recentReviews} = response.data.results;
+
         setPlaceDetail(placeDetail);
         setReviews(recentReviews);
-        fetchBookmarkStatus();
+        setIsBookmarked(placeDetail.isBookmarked); // 북마크 상태 설정
       } catch (error) {
         console.error('Error fetching place details:', error);
       } finally {
@@ -117,6 +98,7 @@ const SearchDetail: React.FC = () => {
     fetchPlaceDetail();
   }, [placeId]);
 
+  // 북마크 토글 함수
   const toggleBookmark = async () => {
     try {
       const authToken = await AsyncStorage.getItem('authToken');
@@ -135,10 +117,8 @@ const SearchDetail: React.FC = () => {
       if (response.data.isSuccess) {
         if (response.data.results === '북마크 저장 성공') {
           setIsBookmarked(true);
-          // Alert.alert('북마크가 추가되었습니다.');
         } else if (response.data.results === '북마크 삭제 성공') {
           setIsBookmarked(false);
-          // Alert.alert('북마크가 삭제되었습니다.');
         }
       } else {
         Alert.alert('북마크 처리 중 문제가 발생했습니다.');
@@ -148,7 +128,6 @@ const SearchDetail: React.FC = () => {
       Alert.alert('북마크 처리 중 오류가 발생했습니다.');
     }
   };
-
 
   if (loading) {
     return (
@@ -206,13 +185,7 @@ const SearchDetail: React.FC = () => {
     <View style={styles.container}>
       <ScrollView style={styles.content}>
         <View
-          style={[
-            styles.categoryBox,
-            {
-              backgroundColor:
-                categoryColors[placeDetail.category] || '#F3F5F7',
-            },
-          ]}>
+          style={[styles.categoryBox, { backgroundColor: categoryColors[placeDetail.category] || '#F3F5F7' }]}>
           <Text style={styles.categoryBoxText}>
             {categoryMapToKorean[placeDetail.category] || placeDetail.category}
           </Text>
@@ -257,58 +230,50 @@ const SearchDetail: React.FC = () => {
         <Text style={styles.reviewTitle}>리뷰</Text>
 
         {reviews.length > 0 ? (
-        <>
-          <View style={styles.averageRatingContainer}>
-            <Text style={styles.averageRatingText}>
-              {placeDetail.rating.toFixed(1)}
-            </Text>
-            {renderStars(placeDetail.rating)}
-          </View>
+          <>
+            <View style={styles.averageRatingContainer}>
+              <Text style={styles.averageRatingText}>
+                {placeDetail.rating.toFixed(1)}
+              </Text>
+              {renderStars(placeDetail.rating)}
+            </View>
 
-          {reviews.map(review => (
-            <View key={review.reviewId} style={styles.reviewContainer}>
-              <View style={styles.reviewHeader}>
-                <View style={styles.reviewUser}>
-                  <Image
-                    source={require('../../assets/images/profile.png')}
-                    style={styles.profileImage}
-                  />
-                  <View>
-                    <Text style={styles.userName}>{review.writer}</Text>
-                    <View style={styles.userRating}>
-                      {[...Array(5)].map((_, i) => (
-                        <Svg
-                          key={i}
-                          width="14"
-                          height="12"
-                          viewBox="0 0 14 12"
-                          fill="none">
-                          <Path
-                            d="M7.00003 10.0496L10.0448 11.8912C10.6024 12.2287 11.2847 11.7298 11.138 11.0988L10.331 7.63582L13.0236 5.3027C13.5151 4.87717 13.251 4.07011 12.6054 4.01875L9.06168 3.71794L7.67502 0.445713C7.42556 -0.148571 6.57449 -0.148571 6.32504 0.445713L4.93837 3.71061L1.39468 4.01142C0.749039 4.06278 0.484913 4.86983 0.976481 5.29536L3.6691 7.62848L2.86205 11.0915C2.71531 11.7224 3.39764 12.2213 3.95524 11.8838L7.00003 10.0496Z"
-                            fill={i < review.rating ? '#FFD643' : '#E8E8E8'}
-                          />
-                        </Svg>
-                      ))}
+            {reviews.map((review) => (
+              <View key={review.reviewId} style={styles.reviewContainer}>
+                <View style={styles.reviewHeader}>
+                  <View style={styles.reviewUser}>
+                    <Image
+                      source={require('../../assets/images/profile.png')}
+                      style={styles.profileImage}
+                    />
+                    <View>
+                      <Text style={styles.userName}>{review.writer}</Text>
+                      <View style={styles.userRating}>
+                        {[...Array(5)].map((_, i) => (
+                          <Svg key={i} width="14" height="12" viewBox="0 0 14 12" fill="none">
+                            <Path
+                              d="M7.00003 10.0496L10.0448 11.8912C10.6024 12.2287 11.2847 11.7298 11.138 11.0988L10.331 7.63582L13.0236 5.3027C13.5151 4.87717 13.251 4.07011 12.6054 4.01875L9.06168 3.71794L7.67502 0.445713C7.42556 -0.148571 6.57449 -0.148571 6.32504 0.445713L4.93837 3.71061L1.39468 4.01142C0.749039 4.06278 0.484913 4.86983 0.976481 5.29536L3.6691 7.62848L2.86205 11.0915C2.71531 11.7224 3.39764 12.2213 3.95524 11.8838L7.00003 10.0496Z"
+                              fill={i < review.rating ? '#FFD643' : '#E8E8E8'}
+                            />
+                          </Svg>
+                        ))}
+                      </View>
                     </View>
                   </View>
+                  <Text style={styles.reviewDate}>{review.date}</Text>
                 </View>
-                <Text style={styles.reviewDate}>{review.date}</Text>
+                <Text style={styles.reviewContent}>{review.content}</Text>
+                {review.reviewImageUrl ? (
+                  <Image source={{ uri: review.reviewImageUrl }} style={styles.reviewImage} />
+                ) : null}
               </View>
-              <Text style={styles.reviewContent}>{review.content}</Text>
-              {review.reviewImageUrl ? (
-                <Image
-                  source={{uri: review.reviewImageUrl}}
-                  style={styles.reviewImage}
-                />
-              ) : null}
-            </View>
-          ))}
-        </>
-      ) : (
-        <View style={styles.noReviewsContainer}>
-          <Text style={styles.noReviewsText}>아직 작성한 리뷰가 없어요</Text>
-        </View>
-      )}
+            ))}
+          </>
+        ) : (
+          <View style={styles.noReviewsContainer}>
+            <Text style={styles.noReviewsText}>아직 작성한 리뷰가 없어요</Text>
+          </View>
+        )}
       </ScrollView>
 
       <View style={styles.footer}>
@@ -326,7 +291,7 @@ const SearchDetail: React.FC = () => {
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.footerButton}
-          onPress={() => navigation.navigate('ReviewForm', {placeId})}>
+          onPress={() => navigation.navigate('ReviewForm', { placeId })}>
           <Text style={styles.footerButtonText}>리뷰 작성하기</Text>
         </TouchableOpacity>
       </View>
@@ -461,12 +426,6 @@ const styles = StyleSheet.create({
     marginBottom: 7,
   },
   reviewImage: {
-    height: 342,
-    borderRadius: 5,
-    backgroundColor: '#E8E8E8',
-    marginBottom: 28,
-  },
-  reviewImagePlaceholder: {
     height: 342,
     borderRadius: 5,
     backgroundColor: '#E8E8E8',
