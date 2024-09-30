@@ -1,4 +1,4 @@
-/* eslint-disable no-trailing-spaces */
+
 import React, {useState} from 'react';
 import {
   View,
@@ -30,9 +30,11 @@ const MyPage = () => {
 
   useFocusEffect(
     React.useCallback(() => {
-      const fetchNickname = async (): Promise<void> => {  // 반환 타입 명시
+      const fetchNickname = async (): Promise<void> => {
         try {
           const storedNickname = await AsyncStorage.getItem('userNickname');
+          console.log('불러온 닉네임:', storedNickname);
+
           if (storedNickname) {
             setNickname(storedNickname);
           }
@@ -48,14 +50,14 @@ const MyPage = () => {
   const toggleSwitch = async () => {
     const newPushState = !isPushEnabled;
     setIsPushEnabled(newPushState);
-  
+
     try {
       const token = await AsyncStorage.getItem('authToken');
       if (!token) {
         Alert.alert('오류', '인증 토큰이 없습니다. 다시 로그인해 주세요.');
         return;
       }
-  
+
       const response = await axios.post(
         'http://211.188.51.4/mypage/alarm',
         {
@@ -68,7 +70,7 @@ const MyPage = () => {
           },
         },
       );
-  
+
       if (response.data.isSuccess) {
         console.log('푸시 알림 설정이 성공적으로 업데이트되었습니다.');
       } else {
@@ -89,7 +91,7 @@ const MyPage = () => {
       setIsPushEnabled(!newPushState);
     }
   };
-  
+
   const handleWithdrawal = () => {
     Alert.alert(
       '회원탈퇴',
@@ -146,6 +148,23 @@ const MyPage = () => {
     );
   };
 
+  const handleLogout = async () => {
+    try {
+      await AsyncStorage.removeItem('authToken');
+      await AsyncStorage.removeItem('userNickname');
+
+      // Alert.alert('로그아웃', '성공적으로 로그아웃되었습니다.');
+
+      navigation.reset({
+        index: 0,
+        routes: [{name: 'Splash'}],
+      });
+    } catch (error) {
+      console.error('로그아웃 중 오류 발생:', error);
+      Alert.alert('오류', '로그아웃 중 문제가 발생했습니다. 다시 시도해주세요.');
+    }
+  };
+
   return (
     <View style={styles.pageContainer}>
       <ScrollView contentContainerStyle={styles.container}>
@@ -156,8 +175,7 @@ const MyPage = () => {
           />
           <View style={styles.nicknameSection}>
             <Text style={styles.nickname}>{nickname}</Text>
-            <TouchableOpacity
-              onPress={() => navigation.navigate('ProfileEdit')}>
+            <TouchableOpacity onPress={() => navigation.navigate('ProfileEdit')}>
               <Svg width="24" height="25" viewBox="0 0 24 25" fill="none">
                 <Path
                   d="M9 18.5L15 12.5L9 6.5"
@@ -179,7 +197,9 @@ const MyPage = () => {
         </View>
         <View style={styles.menuSection}>
           <TouchableOpacity style={styles.menuItem}>
-            <Text style={styles.menuText} onPress={() => navigation.navigate('MyBookmark')}>북마크</Text>
+            <Text style={styles.menuText} onPress={() => navigation.navigate('MyBookmark')}>
+              북마크
+            </Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.menuItem}
@@ -208,7 +228,7 @@ const MyPage = () => {
               style={{transform: [{scaleX: 1.3}, {scaleY: 1.3}]}}
             />
           </View>
-          <TouchableOpacity style={styles.menuItem}>
+          <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
             <Text style={styles.menuText}>로그아웃</Text>
           </TouchableOpacity>
         </View>
@@ -223,10 +243,6 @@ const MyPage = () => {
             <Text style={styles.withdrawalText}>회원탈퇴</Text>
             <Svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <G clipPath="url(#clip0_287_1824)">
-                <Path
-                  d="M-53.2766 18.4172L-61.7344 9.92664L-53.2711 1.46339L-51.6678 -0.1399V20.0322V25.9247L-48.3345 29.2816V39.1383C-43.1772 50.5521 -34.3486 59.9527 -23.3551 65.8335H-12.04L-7.07525 70.8335H9.99883V65.8335H15.1405V64.1669H41.9473L46.9472 59.1669H64.9988V64.1669H41.9473L33.6139 72.5002H3.33217C0.078186 72.5002 -3.11181 72.2258 -6.21593 71.6989L-7.07525 70.8335H-10.3633C-14.9386 69.6976 -19.2945 68.0057 -23.3551 65.8335H-48.3345V39.1383C-49.7205 36.0708 -50.8414 32.858 -51.6678 29.529V25.9247L-52.5988 24.9871C-52.9483 22.8354 -53.1767 20.643 -53.2766 18.4172Z"
-                  fill="#8E9398"
-                />
                 <Path
                   d="M10.599 5.10102C10.5433 5.04523 10.4528 5.04523 10.3971 5.10102L9.89398 5.60423C9.8383 5.65992 9.83821 5.75017 9.89378 5.80597L10.8403 6.75642C10.93 6.84647 10.8662 7 10.7391 7H6.14203C6.06316 7 5.99922 7.06394 5.99922 7.14281V7.85719C5.99922 7.93606 6.06316 8 6.14203 8H10.7382C10.8654 8 10.9291 8.1538 10.8392 8.24377L9.89382 9.18939C9.8382 9.24502 9.83804 9.33514 9.89346 9.39097L10.3971 9.89827C10.4528 9.95439 10.5435 9.95455 10.5994 9.89862L12.8965 7.60097C12.9522 7.5452 12.9522 7.4548 12.8965 7.39903L10.599 5.10102ZM3.99974 4.14281C3.99974 4.06394 4.06368 4 4.14255 4H7.85589C7.93476 4 7.9987 3.93606 7.9987 3.85719V3.14281C7.9987 3.06394 7.93476 3 7.85589 3H3.99974C3.44988 3 3 3.45 3 4V11C3 11.55 3.44988 12 3.99974 12H7.85589C7.93476 12 7.9987 11.9361 7.9987 11.8572V11.1428C7.9987 11.0639 7.93476 11 7.85589 11H4.14255C4.06368 11 3.99974 10.9361 3.99974 10.8572V4.14281Z"
                   fill="#8E9398"

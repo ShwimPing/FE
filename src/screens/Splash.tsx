@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import React, {useEffect, useState} from 'react';
+import React, {useEffect} from 'react';
 import {
   View,
   Text,
@@ -8,13 +7,14 @@ import {
   Alert,
   Image,
 } from 'react-native';
-import Svg, {Path, G, ClipPath, Defs, Rect} from 'react-native-svg';
+import Svg, {Path, G, Defs, Rect, ClipPath} from 'react-native-svg';
 import {useNavigation} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {RootStackParamList} from '../App';
 import NaverLogin from '@react-native-seoul/naver-login';
 import axios from 'axios';
+import {KakaoOAuthToken, login as kakaoLogin} from '@react-native-seoul/kakao-login';  // 카카오 로그인 관련 임포트
 
 type SplashScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -43,20 +43,9 @@ const Splash = () => {
 
       if (successResponse) {
         const accessToken = successResponse.accessToken;
-        Alert.alert('로그인 성공', `액세스 토큰: ${accessToken}`);
-
-        try {
-          await AsyncStorage.setItem('accessToken', accessToken);
-
-          await postToBackend(accessToken);
-          navigation.navigate('Home');
-        } catch (error) {
-          console.error('백엔드 전송 에러:', error);
-          Alert.alert(
-            '백엔드 전송 실패',
-            '서버와 통신 중 문제가 발생했습니다.',
-          );
-        }
+        await AsyncStorage.setItem('accessToken', accessToken);
+        await postToBackend(accessToken, 'NAVER'); // 백엔드 전송 시 "NAVER"로 전송
+        navigation.navigate('Home');
       } else if (failureResponse) {
         Alert.alert('로그인 실패', failureResponse.message);
       }
@@ -65,24 +54,37 @@ const Splash = () => {
     }
   };
 
-  const postToBackend = async (accessToken: string) => {
+  const loginWithKakao = async () => {
     try {
-      console.log('전송할 데이터:', {accessToken});
+      const token: KakaoOAuthToken = await kakaoLogin();
+      const accessToken = token.accessToken;
+
+      await AsyncStorage.setItem('accessToken', accessToken);
+      await postToBackend(accessToken, 'KAKAO');
+      navigation.navigate('Home');
+    } catch (error) {
+      console.error('카카오 로그인 에러:', error);
+      Alert.alert('카카오 로그인 실패', '카카오 로그인을 처리하는 중 문제가 발생했습니다.');
+    }
+  };
+
+  const postToBackend = async (accessToken: string, provider: string) => {
+    try {
+      console.log(`${provider} 로그인으로 전송할 데이터:`, {accessToken});
 
       const response = await axios.post(
-        'http://211.188.51.4/auth/login/NAVER',
-        {
-          accessToken,
-        },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        },
+        `http://211.188.51.4/auth/login/${provider}`,
+        {accessToken},
+        {headers: {'Content-Type': 'application/json'}}
       );
+
       console.log('서버 응답:', response.data);
     } catch (error) {
-      console.error('백엔드 전송 에러:', error);
+      console.error(`${provider} 로그인 백엔드 전송 에러:`, error);
+      Alert.alert(
+        `${provider} 로그인 실패`,
+        '서버와 통신 중 문제가 발생했습니다. 다시 시도해 주세요.',
+      );
     }
   };
 
@@ -118,7 +120,7 @@ const Splash = () => {
         <Text style={styles.naverButtonText}>네이버로 시작하기</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.kakaoButton}>
+      <TouchableOpacity style={styles.kakaoButton} onPress={loginWithKakao}>
         <Svg width="19" height="18" viewBox="0 0 19 18" fill="none">
           <G clipPath="url(#clip0_241_496)">
             <Path
