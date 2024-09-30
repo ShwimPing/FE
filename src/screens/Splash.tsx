@@ -43,7 +43,7 @@ const Splash = () => {
 
       if (successResponse) {
         const accessToken = successResponse.accessToken;
-        Alert.alert('로그인 성공', `액세스 토큰: ${accessToken}`);
+        // Alert.alert('로그인 성공', `액세스 토큰: ${accessToken}`);
 
         try {
           await AsyncStorage.setItem('accessToken', accessToken);
