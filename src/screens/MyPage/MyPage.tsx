@@ -33,6 +33,8 @@ const MyPage = () => {
       const fetchNickname = async (): Promise<void> => {
         try {
           const storedNickname = await AsyncStorage.getItem('userNickname');
+          console.log('불러온 닉네임:', storedNickname);
+
           if (storedNickname) {
             setNickname(storedNickname);
           }
