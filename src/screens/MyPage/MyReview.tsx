@@ -1,24 +1,72 @@
-import React from 'react';
-import {View, Text, StyleSheet, ScrollView, Image} from 'react-native';
-import Svg, {Path} from 'react-native-svg';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, Image, ActivityIndicator, Alert, TouchableOpacity } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+interface Review {
+  reviewId: number;
+  writer: string;
+  rating: number;
+  content: string;
+  reviewImageUrl: string | null;
+  date: string;
+}
 
 const MyReview: React.FC = () => {
-  const reviews = [
-    {
-      reviewId: 1,
-      writer: '햄깅이',
-      rating: 4,
-      content: '생각보다 내부가 엄청 넓었어요. 쉬기 좋았어요!',
-      reviewImageUrl: null,
-    },
-    {
-      reviewId: 2,
-      writer: '김밥이',
-      rating: 5,
-      content: '분위기 최고! 다음에 또 올 거에요.',
-      reviewImageUrl: 'https://example.com/image2.jpg',
-    },
-  ];
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchReviews = async () => {
+    try {
+      setLoading(true);
+      const token = await AsyncStorage.getItem('authToken');
+      if (!token) {
+        throw new Error('토큰을 찾을 수 없습니다.');
+      }
+
+      const response = await axios.get('http://211.188.51.4/mypage/review', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        params: {
+          lastReviewId: 0,
+        },
+      });
+
+      const newReviews = response.data?.results?.reviewSimpleResponseList || [];
+      setReviews(newReviews);
+    } catch (err) {
+      setError(err.message || '리뷰를 불러오는 중 오류가 발생했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deleteReview = async (reviewId: number) => {
+    try {
+      const token = await AsyncStorage.getItem('authToken');
+      if (!token) {
+        throw new Error('토큰을 찾을 수 없습니다.');
+      }
+
+      await axios.delete(`http://211.188.51.4/reviews/${reviewId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      setReviews((prevReviews) => prevReviews.filter((review) => review.reviewId !== reviewId));
+      Alert.alert('성공', '리뷰가 삭제되었습니다.');
+    } catch (err) {
+      Alert.alert('오류', err.message || '리뷰 삭제 중 오류가 발생했습니다.');
+    }
+  };
+
+  useEffect(() => {
+    fetchReviews();
+  }, []);
 
   const renderStars = (rating: number) => {
     const filledStars = Math.floor(rating);
@@ -58,33 +106,41 @@ const MyReview: React.FC = () => {
 
   return (
     <ScrollView contentContainerStyle={reviews.length === 0 ? styles.emptyContainer : null} style={styles.container}>
-      {reviews.length === 0 ? (
+      {loading ? (
+        <ActivityIndicator size="large" color="#0000ff" />
+      ) : error ? (
+        <Text style={styles.errorText}>{error}</Text>
+      ) : reviews.length === 0 ? (
         <Text style={styles.noReviewsText}>아직 작성한 리뷰가 없어요</Text>
       ) : (
         reviews.map((review) => (
           <View key={review.reviewId} style={styles.reviewContainer}>
-            <View style={styles.reviewHeader}>
-              <View style={styles.userInfoContainer}>
-                <Image
-                  source={require('../../../assets/images/profile.png')}
-                  style={styles.profileImage}
-                />
-                <View>
+            <View style={styles.rowContainer}>
+              <Image
+                source={require('../../../assets/images/profile.png')}
+                style={styles.profileImage}
+              />
+
+              <View style={styles.infoContainer}>
+                <View style={styles.nameAndDateContainer}>
                   <Text style={styles.userName}>{review.writer}</Text>
+                  <Text style={styles.reviewDate}>{review.date}</Text>
+                </View>
+
+                <View style={styles.starsAndDeleteContainer}>
                   {renderStars(review.rating)}
+                  <TouchableOpacity onPress={() => deleteReview(review.reviewId)}>
+                    <Text style={styles.deleteButton}>삭제</Text>
+                  </TouchableOpacity>
                 </View>
               </View>
-
-              <Text style={styles.deleteButton}>삭제</Text>
             </View>
 
             <Text style={styles.reviewContent}>{review.content}</Text>
 
-            {review.reviewImageUrl ? (
-              <Image source={{uri: review.reviewImageUrl}} style={styles.reviewImage} />
-            ) : (
-              <View style={styles.imagePlaceholder} />
-            )}
+            {review.reviewImageUrl && review.reviewImageUrl.trim() !== '' ? (
+              <Image source={{ uri: review.reviewImageUrl }} style={styles.reviewImage} />
+            ) : null}
           </View>
         ))
       )}
@@ -108,18 +164,18 @@ const styles = StyleSheet.create({
     fontFamily: 'Pretendard-Bold',
     color: '#000',
   },
+  errorText: {
+    fontSize: 16,
+    fontFamily: 'Pretendard-Bold',
+    color: 'red',
+  },
   reviewContainer: {
     marginBottom: 24,
   },
-  reviewHeader: {
+  rowContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 8,
-  },
-  userInfoContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
   },
   profileImage: {
     width: 40,
@@ -127,19 +183,38 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     marginRight: 7,
   },
+  infoContainer: {
+    flex: 1,
+  },
+  nameAndDateContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
   userName: {
     fontSize: 12,
     fontFamily: 'Pretendard-Bold',
     color: '#505458',
-    marginBottom: 2,
-    lineHeight: 18,
+  },
+  reviewDate: {
+    color: '#565656',
+    fontFamily: 'Pretendard',
+    fontSize: 12,
+    fontWeight: '400',
+  },
+  starsAndDeleteContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 7,
   },
   starContainer: {
     flexDirection: 'row',
   },
   deleteButton: {
     color: '#565656',
-    fontFamily: 'Pretendard-Regular',
+    fontFamily: 'Pretendard',
     fontSize: 12,
     lineHeight: 18,
     borderBottomColor: '#222',
@@ -149,19 +224,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     fontFamily: 'Pretendard-Regular',
-    marginBottom: 8,
     lineHeight: 21,
   },
   reviewImage: {
     height: 342,
     borderRadius: 7,
-    marginBottom: 12,
-  },
-  imagePlaceholder: {
-    height: 342,
-    backgroundColor: '#E0E0E0',
-    borderRadius: 8,
-    marginBottom: 12,
+    marginTop: 8,
   },
 });
 
