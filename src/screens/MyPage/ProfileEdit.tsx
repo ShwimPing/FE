@@ -1,4 +1,3 @@
-
 /* eslint-disable react-native/no-inline-styles */
 /* eslint-disable no-trailing-spaces */
 import React, {useState, useEffect} from 'react';
@@ -13,11 +12,12 @@ import {
   Keyboard,
   ScrollView,
 } from 'react-native';
-import {NativeStackScreenProps, NativeStackNavigationProp} from '@react-navigation/native-stack';
+import {launchImageLibrary} from 'react-native-image-picker';
 import Svg, {Path, G, ClipPath, Rect, Defs} from 'react-native-svg';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useNavigation} from '@react-navigation/native';
+import {NativeStackScreenProps, NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {RootStackParamList} from '../../App';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ProfileEdit'>;
@@ -28,8 +28,23 @@ const ProfileEdit: React.FC<Props> = () => {
   const [nicknameMessage, setNicknameMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [profileImage, setProfileImage] = useState<any>(null);
 
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
+  const handleProfileImageChange = () => {
+    launchImageLibrary({mediaType: 'photo'}, (response) => {
+      if (response.didCancel) {
+        console.log('이미지 선택 취소');
+      } else if (response.errorCode) {
+        console.log('이미지 선택 오류:', response.errorMessage);
+      } else if (response.assets && response.assets.length > 0) {
+        const selectedImage = response.assets[0];
+        setProfileImage(selectedImage);
+        console.log('선택된 이미지:', selectedImage);
+      }
+    });
+  };
 
   const handleNicknameChange = async () => {
     try {
@@ -41,12 +56,17 @@ const ProfileEdit: React.FC<Props> = () => {
         return;
       }
 
-  
       const formData = new FormData();
       formData.append('request', JSON.stringify({ nickname }));
-  
-      console.log('전송할 FormData:', formData);
-  
+      
+      if (profileImage) {
+        formData.append('file', {
+          uri: profileImage.uri,
+          name: profileImage.fileName || 'profile.jpg',  // 파일 이름이 없을 경우 기본 이름
+          type: profileImage.type,
+        });
+      }
+
       const response = await axios.put(
         'http://211.188.51.4/mypage/profile',
         formData,
@@ -57,8 +77,6 @@ const ProfileEdit: React.FC<Props> = () => {
           },
         },
       );
-  
-      console.log('서버 응답:', response.data);
   
       if (response.data.isSuccess) {
         setIsNicknameValid(true);
@@ -83,7 +101,6 @@ const ProfileEdit: React.FC<Props> = () => {
       setIsSubmitting(false);
     }
   };
-  
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
@@ -111,10 +128,16 @@ const ProfileEdit: React.FC<Props> = () => {
         <View style={styles.container}>
           <View style={styles.profileImageContainer}>
             <Image
-              source={require('../../../assets/images/profile.png')}
+              source={
+                profileImage
+                  ? {uri: profileImage.uri}
+                  : require('../../../assets/images/profile.png')
+              }
               style={styles.profileImage}
             />
-            <View style={styles.addIconContainer}>
+            <TouchableOpacity
+              style={styles.addIconContainer}
+              onPress={handleProfileImageChange}>
               <Svg width="25" height="24" viewBox="0 0 25 24" fill="none">
                 <G clipPath="url(#clip0_263_4834)">
                   <Path
@@ -137,20 +160,14 @@ const ProfileEdit: React.FC<Props> = () => {
                   </ClipPath>
                 </Defs>
               </Svg>
-            </View>
+            </TouchableOpacity>
           </View>
 
           <View style={styles.nicknameContainer}>
             <Text style={styles.label}>닉네임</Text>
             <View style={styles.inputRow}>
               <TextInput
-                style={[
-                  styles.nicknameInput,
-                  {
-                    borderColor: isNicknameValid ? '#F8F9FA' : '#FF5252',
-                    borderWidth: isNicknameValid ? 0 : 1,
-                  },
-                ]}
+                style={[styles.nicknameInput, { borderColor: isNicknameValid ? '#F8F9FA' : '#FF5252', borderWidth: isNicknameValid ? 0 : 1 }]}
                 value={nickname}
                 onChangeText={text => setNickname(text)}
                 placeholder="닉네임을 입력하세요"
@@ -172,17 +189,10 @@ const ProfileEdit: React.FC<Props> = () => {
       {!keyboardVisible && (
         <View style={styles.footer}>
           <TouchableOpacity
-            style={[
-              styles.nextButton,
-              {backgroundColor: nickname ? '#222' : '#F8F9FA'},
-            ]}
+            style={[styles.nextButton, {backgroundColor: nickname ? '#222' : '#F8F9FA'}]}
             onPress={handleNicknameChange}
             disabled={!nickname || isSubmitting}>
-            <Text
-              style={[
-                styles.nextButtonText,
-                {color: nickname ? '#FFF' : '#D2D3D3'},
-              ]}>
+            <Text style={[styles.nextButtonText, {color: nickname ? '#FFF' : '#D2D3D3'}]}>
               수정하기
             </Text>
           </TouchableOpacity>

@@ -1,4 +1,3 @@
-
 import React, {useState} from 'react';
 import {
   View,
@@ -27,24 +26,39 @@ const MyPage = () => {
   const navigation = useNavigation<MyPageNavigationProp>();
   const [isPushEnabled, setIsPushEnabled] = useState(false);
   const [nickname, setNickname] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useFocusEffect(
     React.useCallback(() => {
-      const fetchNickname = async (): Promise<void> => {
+      const fetchUserInfo = async () => {
         try {
-          const storedNickname = await AsyncStorage.getItem('userNickname');
-          console.log('불러온 닉네임:', storedNickname);
+          const token = await AsyncStorage.getItem('authToken');
+          if (!token) {
+            Alert.alert('오류', '인증 토큰이 없습니다. 다시 로그인해 주세요.');
+            return;
+          }
 
-          if (storedNickname) {
-            setNickname(storedNickname);
+          const response = await axios.get('http://211.188.51.4/mypage', {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          if (response.data.isSuccess) {
+            setNickname(response.data.results.nickname);
+          } else {
+            Alert.alert('오류', '유저 정보를 불러오지 못했습니다.');
           }
         } catch (error) {
-          console.error('Failed to load nickname:', error);
+          console.error('Failed to load user info:', error);
+          Alert.alert('오류', '유저 정보를 가져오는 중 오류가 발생했습니다.');
+        } finally {
+          setLoading(false);
         }
       };
 
-      fetchNickname();
-    }, []),
+      fetchUserInfo();
+    }, [])
   );
 
   const toggleSwitch = async () => {
@@ -60,15 +74,13 @@ const MyPage = () => {
 
       const response = await axios.post(
         'http://211.188.51.4/mypage/alarm',
-        {
-          isPushEnabled: newPushState,
-        },
+        { isPushEnabled: newPushState },
         {
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
           },
-        },
+        }
       );
 
       if (response.data.isSuccess) {
@@ -78,16 +90,8 @@ const MyPage = () => {
         setIsPushEnabled(!newPushState);
       }
     } catch (error) {
-      if (axios.isAxiosError(error)) {
-        console.error('Axios error:', error.response?.data || error.message);
-        Alert.alert(
-          '오류',
-          '푸시 알림 설정 업데이트 중 오류가 발생했습니다. 다시 시도해 주세요.',
-        );
-      } else {
-        console.error('Unexpected error:', error);
-        Alert.alert('오류', '알 수 없는 오류가 발생했습니다.');
-      }
+      console.error('Error updating push notification:', error);
+      Alert.alert('오류', '푸시 알림 설정 업데이트 중 오류가 발생했습니다.');
       setIsPushEnabled(!newPushState);
     }
   };
@@ -97,7 +101,7 @@ const MyPage = () => {
       '회원탈퇴',
       '정말로 탈퇴하시겠습니까?',
       [
-        {text: '취소', style: 'cancel'},
+        { text: '취소', style: 'cancel' },
         {
           text: '확인',
           onPress: async () => {
@@ -107,44 +111,29 @@ const MyPage = () => {
                 Alert.alert('오류', '인증 토큰이 없습니다. 다시 로그인해 주세요.');
                 return;
               }
-              const response = await axios.delete(
-                'http://211.188.51.4/auth/withdraw',
-                {
-                  headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`,
-                  },
+
+              const response = await axios.delete('http://211.188.51.4/auth/withdraw', {
+                headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: `Bearer ${token}`,
                 },
-              );
+              });
 
               if (response.data.isSuccess) {
                 Alert.alert('성공', '회원탈퇴가 완료되었습니다.');
+                await AsyncStorage.removeItem('authToken');
                 navigation.navigate('Login');
               } else {
-                Alert.alert(
-                  '탈퇴 실패',
-                  response.data.message || '탈퇴에 실패했습니다.',
-                );
+                Alert.alert('탈퇴 실패', response.data.message || '탈퇴에 실패했습니다.');
               }
             } catch (error) {
-              if (axios.isAxiosError(error)) {
-                console.error(
-                  'Axios error:',
-                  error.response?.data || error.message,
-                );
-                Alert.alert(
-                  '오류',
-                  '탈퇴 중 오류가 발생했습니다. 다시 시도해 주세요.',
-                );
-              } else {
-                console.error('Unexpected error:', error);
-                Alert.alert('오류', '알 수 없는 오류가 발생했습니다.');
-              }
+              console.error('Withdrawal error:', error);
+              Alert.alert('오류', '탈퇴 중 오류가 발생했습니다.');
             }
           },
         },
       ],
-      {cancelable: false},
+      { cancelable: false }
     );
   };
 
@@ -152,18 +141,23 @@ const MyPage = () => {
     try {
       await AsyncStorage.removeItem('authToken');
       await AsyncStorage.removeItem('userNickname');
-
-      // Alert.alert('로그아웃', '성공적으로 로그아웃되었습니다.');
-
       navigation.reset({
         index: 0,
-        routes: [{name: 'Splash'}],
+        routes: [{ name: 'Splash' }],
       });
     } catch (error) {
       console.error('로그아웃 중 오류 발생:', error);
       Alert.alert('오류', '로그아웃 중 문제가 발생했습니다. 다시 시도해주세요.');
     }
   };
+
+  if (loading) {
+    return (
+      <View style={styles.pageContainer}>
+        <Text>로딩 중...</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.pageContainer}>
@@ -195,6 +189,7 @@ const MyPage = () => {
             />
           </View>
         </View>
+
         <View style={styles.menuSection}>
           <TouchableOpacity style={styles.menuItem}>
             <Text style={styles.menuText} onPress={() => navigation.navigate('MyBookmark')}>
@@ -223,19 +218,21 @@ const MyPage = () => {
               value={isPushEnabled}
               onValueChange={toggleSwitch}
               thumbColor="#FFFFFF"
-              trackColor={{false: '#767577', true: '#222'}}
+              trackColor={{ false: '#767577', true: '#222' }}
               ios_backgroundColor="#767577"
-              style={{transform: [{scaleX: 1.3}, {scaleY: 1.3}]}}
+              style={{ transform: [{ scaleX: 1.3 }, { scaleY: 1.3 }] }}
             />
           </View>
           <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
             <Text style={styles.menuText}>로그아웃</Text>
           </TouchableOpacity>
         </View>
+
         <View style={styles.versionSection}>
           <Text style={styles.versionText}>앱 버전</Text>
           <Text style={styles.versionNumber}>1.0.0</Text>
         </View>
+
         <View style={styles.withdrawalSection}>
           <TouchableOpacity
             style={styles.withdrawalButton}
