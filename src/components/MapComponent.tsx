@@ -235,6 +235,9 @@ const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const handleCameraChange = (event: {latitude: number, longitude: number}) => {
     const {latitude, longitude} = event;
 
+    // 카메라 이동 중에는 구 정보 공백으로 설정
+    setDistrict('');
+
     setCamera({
       latitude,
       longitude,
