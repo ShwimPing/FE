@@ -16,7 +16,7 @@ import Geolocation from 'react-native-geolocation-service';
 import axios from 'axios';
 import {NAVER_CLIENT_ID, NAVER_API_KEY} from '../../config';
 import {useNavigation, NavigationProp} from '@react-navigation/native';
-import { RootStackParamList } from '../App';
+import {RootStackParamList} from '../App';
 
 const SEOUL_COORD = {
   latitude: 37.5665,
@@ -32,11 +32,11 @@ const initialCamera = {
 };
 
 const categories = [
-  { label: '전체', value: 'TOGETHER' },
-  { label: '무더위쉼터', value: 'HOT' },
-  { label: '한파쉼터', value: 'COLD' },
-  { label: '도서관쉼터', value: 'LIBRARY' },
-  { label: '스마트쉼터', value: 'SMART' },
+  {label: '전체', value: 'TOGETHER'},
+  {label: '무더위쉼터', value: 'HOT'},
+  {label: '한파쉼터', value: 'COLD'},
+  {label: '도서관쉼터', value: 'LIBRARY'},
+  {label: '스마트쉼터', value: 'SMART'},
 ];
 
 const MapComponent = () => {
@@ -50,10 +50,10 @@ const MapComponent = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('TOGETHER');
   const [district, setDistrict] = useState<string>('');
   const [markers, setMarkers] = useState<
-  {latitude: number; longitude: number; placeId: number}[]
->([]);
+    {latitude: number; longitude: number; placeId: number}[]
+  >([]);
 
-const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
 
   const requestLocationPermission = useCallback(async () => {
     if (Platform.OS === 'android') {
@@ -76,35 +76,48 @@ const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   }, []);
 
   // 구 정보
-  const fetchDistrictName = useCallback(async (latitude: number, longitude: number) => {
-    try {
-      const response = await axios.get(
-        'https://naveropenapi.apigw.ntruss.com/map-reversegeocode/v2/gc',
-        {
-          params: {
-            coords: `${longitude},${latitude}`,
-            orders: 'legalcode,admcode',
-            output: 'json',
+  const fetchDistrictName = useCallback(
+    async (latitude: number, longitude: number) => {
+      try {
+        const response = await axios.get(
+          'https://naveropenapi.apigw.ntruss.com/map-reversegeocode/v2/gc',
+          {
+            params: {
+              coords: `${longitude},${latitude}`,
+              orders: 'legalcode,admcode',
+              output: 'json',
+            },
+            headers: {
+              'X-NCP-APIGW-API-KEY-ID': NAVER_CLIENT_ID,
+              'X-NCP-APIGW-API-KEY': NAVER_API_KEY,
+            },
           },
-          headers: {
-            'X-NCP-APIGW-API-KEY-ID': NAVER_CLIENT_ID,
-            'X-NCP-APIGW-API-KEY': NAVER_API_KEY,
-          },
-        },
-      );
+        );
 
-      const region = response.data.results?.[0]?.region;
-      const fetchedDistrict = region?.area2?.name || '구 정보 없음';
-      setDistrict(fetchedDistrict);
+        const region = response.data.results?.[0]?.region;
+        const fetchedDistrict = region?.area2?.name || '구 정보 없음';
+        setDistrict(fetchedDistrict);
 
-      fetchNearbyPlaces(latitude, longitude, fetchedDistrict, selectedCategory);
-    } catch (error) {
-      console.error('구 정보 가져오기 실패:', error);
-    }
-  }, [selectedCategory]);
+        fetchNearbyPlaces(
+          latitude,
+          longitude,
+          fetchedDistrict,
+          selectedCategory,
+        );
+      } catch (error) {
+        console.error('구 정보 가져오기 실패:', error);
+      }
+    },
+    [selectedCategory],
+  );
 
   // 카테고리별 주변 장소
-  const fetchNearbyPlaces = async (latitude: number, longitude: number, region: string, category: string) => {
+  const fetchNearbyPlaces = async (
+    latitude: number,
+    longitude: number,
+    region: string,
+    category: string,
+  ) => {
     try {
       const response = await axios.get('http://211.188.51.4/places/nearby', {
         params: {
@@ -210,7 +223,12 @@ const navigation = useNavigation<NavigationProp<RootStackParamList>>();
 
   useEffect(() => {
     if (currentLocation && district) {
-      fetchNearbyPlaces(currentLocation.latitude, currentLocation.longitude, district, selectedCategory);
+      fetchNearbyPlaces(
+        currentLocation.latitude,
+        currentLocation.longitude,
+        district,
+        selectedCategory,
+      );
     }
   }, [currentLocation, selectedCategory, district]);
 
@@ -232,22 +250,47 @@ const navigation = useNavigation<NavigationProp<RootStackParamList>>();
     navigation.navigate('SearchDetail', {placeId});
   };
 
-  const handleCameraChange = (event: {latitude: number, longitude: number}) => {
-    const {latitude, longitude} = event;
+  const handleCameraChange = useCallback(
+    async (event: {latitude: number; longitude: number}) => {
+      const {latitude, longitude} = event;
 
-    // 카메라 이동 중에는 구 정보 공백으로 설정
-    setDistrict('');
+      try {
+        const response = await axios.get(
+          'https://naveropenapi.apigw.ntruss.com/map-reversegeocode/v2/gc',
+          {
+            params: {
+              coords: `${longitude},${latitude}`,
+              orders: 'legalcode,admcode',
+              output: 'json',
+            },
+            headers: {
+              'X-NCP-APIGW-API-KEY-ID': NAVER_CLIENT_ID,
+              'X-NCP-APIGW-API-KEY': NAVER_API_KEY,
+            },
+          },
+        );
 
-    setCamera({
-      latitude,
-      longitude,
-      zoom: 16,
-      tilt: 0,
-      bearing: 0,
-    });
+        const region = response.data.results?.[0]?.region;
+        const fetchedDistrict = region?.area2?.name || '';
 
-    fetchDistrictName(latitude, longitude);
-  };
+        if (fetchedDistrict && fetchedDistrict !== district) {
+          setDistrict('');
+          setMarkers([]);
+        }
+
+        fetchNearbyPlaces(
+          latitude,
+          longitude,
+          fetchedDistrict,
+          selectedCategory,
+        );
+        setDistrict(fetchedDistrict);
+      } catch (error) {
+        console.error('구 정보 가져오기 실패:', error);
+      }
+    },
+    [district, selectedCategory],
+  );
 
   return (
     <View style={styles.container}>
