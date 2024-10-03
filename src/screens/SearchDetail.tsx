@@ -15,7 +15,7 @@ import axios from 'axios';
 import {useNavigation, NavigationProp} from '@react-navigation/native';
 import {RootStackParamList} from '../App';
 import {useRoute} from '@react-navigation/native';
-import AsyncStorage from '@react-native-async-storage/async-storage'; // AsyncStorage import
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const categoryColors: {[key: string]: string} = {
   TOGETHER: '#F3F5F7',
@@ -42,6 +42,7 @@ interface PlaceDetail {
   category: string;
   rating: number;
   isBookmarked: boolean;
+  restInfo?: string;
 }
 
 interface Review {
@@ -61,7 +62,7 @@ const SearchDetail: React.FC = () => {
   const [placeDetail, setPlaceDetail] = useState<PlaceDetail | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isBookmarked, setIsBookmarked] = useState(false); // 북마크 상태 관리
+  const [isBookmarked, setIsBookmarked] = useState(false);
 
   useEffect(() => {
     const fetchPlaceDetail = async () => {
@@ -82,12 +83,11 @@ const SearchDetail: React.FC = () => {
           },
         });
 
-        // 서버 응답에서 장소 세부 정보 및 리뷰 가져오기
         const {placeDetail, recentReviews} = response.data.results;
 
         setPlaceDetail(placeDetail);
         setReviews(recentReviews);
-        setIsBookmarked(placeDetail.isBookmarked); // 북마크 상태 설정
+        setIsBookmarked(placeDetail.isBookmarked);
       } catch (error) {
         console.error('Error fetching place details:', error);
       } finally {
@@ -98,7 +98,6 @@ const SearchDetail: React.FC = () => {
     fetchPlaceDetail();
   }, [placeId]);
 
-  // 북마크 토글 함수
   const toggleBookmark = async () => {
     try {
       const authToken = await AsyncStorage.getItem('authToken');
@@ -108,11 +107,14 @@ const SearchDetail: React.FC = () => {
         return;
       }
 
-      const response = await axios.get(`http://211.188.51.4/bookmarks/${placeId}`, {
-        headers: {
-          Authorization: `Bearer ${authToken}`,
+      const response = await axios.get(
+        `http://211.188.51.4/bookmarks/${placeId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+          },
         },
-      });
+      );
 
       if (response.data.isSuccess) {
         if (response.data.results === '북마크 저장 성공') {
@@ -183,9 +185,19 @@ const SearchDetail: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <ScrollView style={styles.content}>
+      <ScrollView
+        style={styles.content}
+        // eslint-disable-next-line react-native/no-inline-styles
+        contentContainerStyle={{paddingBottom: 100}}
+      >
         <View
-          style={[styles.categoryBox, { backgroundColor: categoryColors[placeDetail.category] || '#F3F5F7' }]}>
+          style={[
+            styles.categoryBox,
+            {
+              backgroundColor:
+                categoryColors[placeDetail.category] || '#F3F5F7',
+            },
+          ]}>
           <Text style={styles.categoryBoxText}>
             {categoryMapToKorean[placeDetail.category] || placeDetail.category}
           </Text>
@@ -225,6 +237,13 @@ const SearchDetail: React.FC = () => {
           </Text>
         </View>
 
+        {placeDetail.restInfo && (
+          <View style={styles.restInfoBox}>
+            <Text style={styles.restInfoTitle}>휴관일 안내</Text>
+            <Text style={styles.restInfoText}>・{placeDetail.restInfo}</Text>
+          </View>
+        )}
+
         <View style={styles.divider} />
 
         <Text style={styles.reviewTitle}>리뷰</Text>
@@ -238,7 +257,7 @@ const SearchDetail: React.FC = () => {
               {renderStars(placeDetail.rating)}
             </View>
 
-            {reviews.map((review) => (
+            {reviews.map(review => (
               <View key={review.reviewId} style={styles.reviewContainer}>
                 <View style={styles.reviewHeader}>
                   <View style={styles.reviewUser}>
@@ -250,7 +269,12 @@ const SearchDetail: React.FC = () => {
                       <Text style={styles.userName}>{review.writer}</Text>
                       <View style={styles.userRating}>
                         {[...Array(5)].map((_, i) => (
-                          <Svg key={i} width="14" height="12" viewBox="0 0 14 12" fill="none">
+                          <Svg
+                            key={i}
+                            width="14"
+                            height="12"
+                            viewBox="0 0 14 12"
+                            fill="none">
                             <Path
                               d="M7.00003 10.0496L10.0448 11.8912C10.6024 12.2287 11.2847 11.7298 11.138 11.0988L10.331 7.63582L13.0236 5.3027C13.5151 4.87717 13.251 4.07011 12.6054 4.01875L9.06168 3.71794L7.67502 0.445713C7.42556 -0.148571 6.57449 -0.148571 6.32504 0.445713L4.93837 3.71061L1.39468 4.01142C0.749039 4.06278 0.484913 4.86983 0.976481 5.29536L3.6691 7.62848L2.86205 11.0915C2.71531 11.7224 3.39764 12.2213 3.95524 11.8838L7.00003 10.0496Z"
                               fill={i < review.rating ? '#FFD643' : '#E8E8E8'}
@@ -264,7 +288,10 @@ const SearchDetail: React.FC = () => {
                 </View>
                 <Text style={styles.reviewContent}>{review.content}</Text>
                 {review.reviewImageUrl ? (
-                  <Image source={{ uri: review.reviewImageUrl }} style={styles.reviewImage} />
+                  <Image
+                    source={{uri: review.reviewImageUrl}}
+                    style={styles.reviewImage}
+                  />
                 ) : null}
               </View>
             ))}
@@ -291,7 +318,7 @@ const SearchDetail: React.FC = () => {
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.footerButton}
-          onPress={() => navigation.navigate('ReviewForm', { placeId })}>
+          onPress={() => navigation.navigate('ReviewForm', {placeId})}>
           <Text style={styles.footerButtonText}>리뷰 작성하기</Text>
         </TouchableOpacity>
       </View>
@@ -308,7 +335,6 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingHorizontal: 16,
     paddingTop: 12,
-    paddingBottom: 120,
   },
   categoryBox: {
     paddingHorizontal: 12,
@@ -486,6 +512,32 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  restInfoBox: {
+    display: 'flex',
+    width: 343,
+    height: 188,
+    padding: 18,
+    flexDirection: 'column',
+    gap: 10,
+    flexShrink: 0,
+    borderRadius: 10,
+    backgroundColor: '#F8F9FA',
+    marginBottom: 20,
+  },
+  restInfoTitle: {
+    color: '#FF5252',
+    textAlign: 'center',
+    fontFamily: 'Pretendard-Bold',
+    fontSize: 14,
+    lineHeight: 21,
+    marginBottom: 8,
+  },
+  restInfoText: {
+    color: '#000',
+    fontFamily: 'Pretendard-Regular',
+    fontSize: 14,
+    lineHeight: 21,
   },
 });
 
