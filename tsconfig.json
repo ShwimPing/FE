@@ -2,7 +2,8 @@
   "compilerOptions": {
     "jsx": "react",
     "esModuleInterop": true,
-
+    "types": ["react-native"]
   },
+  "include": ["src/**/*"],
   "extends": "@react-native/typescript-config/tsconfig.json"
 }
