@@ -2,7 +2,7 @@
   "compilerOptions": {
     "jsx": "react",
     "esModuleInterop": true,
-    "types": ["react-native"]
+    "types": ["react-native", "react-native-geolocation-service"]
   },
   "include": ["src/**/*"],
   "extends": "@react-native/typescript-config/tsconfig.json"
