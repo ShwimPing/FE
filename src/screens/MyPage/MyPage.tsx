@@ -28,18 +28,18 @@ const MyPage = () => {
   const [isPushEnabled, setIsPushEnabled] = useState(false);
   const [nickname, setNickname] = useState('');
   const [loading, setLoading] = useState(true);
-  const [isLoggedIn, setIsLoggedIn] = useState(false); // 로그인 상태 관리
-  const [isModalVisible, setIsModalVisible] = useState(false); // 모달 표시 상태 관리
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isModalVisible, setIsModalVisible] = useState(false);
 
   useFocusEffect(
     React.useCallback(() => {
       const fetchUserInfo = async () => {
         try {
-          const token = await AsyncStorage.getItem('authToken');
-          console.log(token);
+          const token = await AsyncStorage.getItem('accessToken');
+          // console.log(token);
           if (!token) {
-            setIsLoggedIn(false); // 비로그인 상태 설정
-            setIsModalVisible(true); // 비로그인 시 모달 표시
+            setIsLoggedIn(false);
+            setIsModalVisible(true);
             setLoading(false);
             return;
           }

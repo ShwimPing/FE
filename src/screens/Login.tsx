@@ -10,12 +10,19 @@ import {
 } from 'react-native';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {RootStackParamList} from '../App';
-import { useAuth } from '../services/AuthContext';
+import {useAuth} from '../services/AuthContext';
+import NaverLogin from '@react-native-seoul/naver-login';
+import {
+  KakaoOAuthToken,
+  login as kakaoLogin,
+} from '@react-native-seoul/kakao-login';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
 
 const Login: React.FC<Props> = ({navigation}) => {
-  const { login } = useAuth();
+  const {login} = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
@@ -30,6 +37,71 @@ const Login: React.FC<Props> = ({navigation}) => {
       navigation.navigate('Home');
     } catch (error) {
       Alert.alert('로그인 실패', '이메일 또는 비밀번호가 올바르지 않습니다.');
+    }
+  };
+
+  const loginWithNaver = async () => {
+    try {
+      const {successResponse, failureResponse} = await NaverLogin.login();
+
+      if (successResponse) {
+        const accessToken = successResponse.accessToken;
+
+        await AsyncStorage.setItem('accessToken', accessToken);
+        const storedToken = await AsyncStorage.getItem('accessToken');
+        console.log('저장된 네이버 토큰: ', storedToken);
+
+        await postToBackend(accessToken, 'NAVER');
+
+        navigation.navigate('Home');
+      } else if (failureResponse) {
+        Alert.alert('로그인 실패', failureResponse.message);
+      }
+    } catch (error) {
+      console.error('네이버 로그인 에러:', error);
+    }
+  };
+
+  const loginWithKakao = async () => {
+    try {
+      const token: KakaoOAuthToken = await kakaoLogin();
+      const accessToken = token.accessToken;
+
+      await AsyncStorage.setItem('accessToken', accessToken);
+      await postToBackend(accessToken, 'KAKAO');
+      navigation.navigate('Home');
+    } catch (error) {
+      console.error('카카오 로그인 에러:', error);
+      Alert.alert(
+        '카카오 로그인 실패',
+        '카카오 로그인을 처리하는 중 문제가 발생했습니다.',
+      );
+    }
+  };
+
+  const postToBackend = async (accessToken: string, provider: string) => {
+    try {
+      console.log(`${provider} 로그인으로 전송할 데이터:`, {accessToken});
+
+      const response = await axios.post(
+        `http://211.188.51.4/auth/login/${provider}`,
+        {accessToken},
+        {headers: {'Content-Type': 'application/json'}},
+      );
+
+      console.log('서버 응답:', response.data);
+    if (response.data.isSuccess && response.data.results) {
+      const serverAccessToken = response.data.results.accessToken;
+      console.log('서버에서 받은 액세스 토큰:', serverAccessToken);
+
+      await AsyncStorage.setItem('accessToken', serverAccessToken);
+    }
+    } catch (error) {
+      console.error(`${provider} 로그인 백엔드 전송 에러:`, error);
+      Alert.alert(
+        `${provider} 로그인 실패`,
+        '서버와 통신 중 문제가 발생했습니다. 다시 시도해 주세요.',
+      );
     }
   };
 
@@ -68,14 +140,14 @@ const Login: React.FC<Props> = ({navigation}) => {
       <Text style={styles.snsLoginText}>SNS 계정으로 로그인하기</Text>
 
       <View style={styles.snsButtonsContainer}>
-        <TouchableOpacity style={styles.snsButton}>
+        <TouchableOpacity style={styles.snsButton} onPress={loginWithKakao}>
           <Image
             source={require('../../assets/images/kakaoicon.png')}
             style={styles.snsIcon}
             resizeMode="contain"
           />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.snsButton}>
+        <TouchableOpacity style={styles.snsButton} onPress={loginWithNaver}>
           <Image
             source={require('../../assets/images/navericon.png')}
             style={styles.snsIcon}
