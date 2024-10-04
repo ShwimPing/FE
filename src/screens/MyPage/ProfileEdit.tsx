@@ -49,7 +49,7 @@ const ProfileEdit: React.FC<Props> = () => {
   const handleNicknameChange = async () => {
     try {
       setIsSubmitting(true);
-      const authToken = await AsyncStorage.getItem('authToken');
+      const authToken = await AsyncStorage.getItem('accessToken');
   
       if (!authToken) {
         Alert.alert('인증 오류', '로그인이 필요합니다.');
@@ -62,7 +62,7 @@ const ProfileEdit: React.FC<Props> = () => {
       if (profileImage) {
         formData.append('file', {
           uri: profileImage.uri,
-          name: profileImage.fileName || 'profile.jpg',  // 파일 이름이 없을 경우 기본 이름
+          name: profileImage.fileName || 'profile.jpg',  
           type: profileImage.type,
         });
       }

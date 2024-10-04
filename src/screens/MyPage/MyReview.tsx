@@ -21,7 +21,7 @@ const MyReview: React.FC = () => {
   const fetchReviews = async () => {
     try {
       setLoading(true);
-      const token = await AsyncStorage.getItem('authToken');
+      const token = await AsyncStorage.getItem('accessToken');
       if (!token) {
         throw new Error('토큰을 찾을 수 없습니다.');
       }
@@ -38,7 +38,11 @@ const MyReview: React.FC = () => {
       const newReviews = response.data?.results?.reviewSimpleResponseList || [];
       setReviews(newReviews);
     } catch (err) {
-      setError(err.message || '리뷰를 불러오는 중 오류가 발생했습니다.');
+      if (err instanceof Error) {
+        setError(err.message || '리뷰를 불러오는 중 오류가 발생했습니다.');
+      } else {
+        setError('리뷰를 불러오는 중 알 수 없는 오류가 발생했습니다.');
+      }
     } finally {
       setLoading(false);
     }
@@ -60,7 +64,11 @@ const MyReview: React.FC = () => {
       setReviews((prevReviews) => prevReviews.filter((review) => review.reviewId !== reviewId));
       Alert.alert('성공', '리뷰가 삭제되었습니다.');
     } catch (err) {
-      Alert.alert('오류', err.message || '리뷰 삭제 중 오류가 발생했습니다.');
+      if (err instanceof Error) {
+        Alert.alert('오류', err.message || '리뷰 삭제 중 오류가 발생했습니다.');
+      } else {
+        Alert.alert('오류', '리뷰 삭제 중 알 수 없는 오류가 발생했습니다.');
+      }
     }
   };
 

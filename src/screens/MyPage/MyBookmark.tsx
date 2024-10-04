@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import React, {useState, useEffect} from 'react';
 import {
   View,
@@ -7,6 +6,7 @@ import {
   FlatList,
   ActivityIndicator,
   SafeAreaView,
+  Alert,
 } from 'react-native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -53,9 +53,9 @@ const MyBookmark = () => {
     isRefreshing = false,
   ) => {
     try {
-      const token = await AsyncStorage.getItem('authToken');
+      const token = await AsyncStorage.getItem('accessToken');
       if (!token) {
-        alert('인증 토큰이 없습니다. 다시 로그인해 주세요.');
+        Alert.alert('인증 오류', '인증 토큰이 없습니다. 다시 로그인해 주세요.');
         return;
       }
 
@@ -66,6 +66,7 @@ const MyBookmark = () => {
 
       if (response.data && response.data.isSuccess && response.data.results) {
         const newBookmarks = response.data.results.bookMarkList;
+
 
         if (isRefreshing) {
           setBookmarks(newBookmarks);
@@ -102,8 +103,6 @@ const MyBookmark = () => {
   };
 
   const renderBookmark = ({item}: {item: Bookmark}) => {
-    // console.log(item);
-
     return (
       <View key={item.bookMarkId} style={styles.bookmarkContainer}>
         <View
@@ -130,8 +129,6 @@ const MyBookmark = () => {
         </View>
 
         <View style={styles.detailContainer}>
-          <Text style={styles.detailText}>65m</Text>
-          <Text style={styles.dot}>•</Text>
           <Text style={styles.detailText}>{item.address}</Text>
           <Text style={styles.detailText}>|</Text>
           <Text style={styles.detailText}>
@@ -253,6 +250,3 @@ const styles = StyleSheet.create({
 });
 
 export default MyBookmark;
-function alert(arg0: string) {
-  throw new Error('Function not implemented.');
-}
