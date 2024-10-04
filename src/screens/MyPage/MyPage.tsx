@@ -30,7 +30,7 @@ const MyPage = () => {
   const [loading, setLoading] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [loginProvider, setLoginProvider] = useState(''); // 계정 유형 상태 추가
+  const [loginProvider, setLoginProvider] = useState('');
 
   useFocusEffect(
     React.useCallback(() => {

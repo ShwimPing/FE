@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-shadow */
-import React, {useEffect, useState} from 'react';
+import React, {useState} from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import Svg, {Path} from 'react-native-svg';
 import axios from 'axios';
 import {useNavigation, NavigationProp} from '@react-navigation/native';
 import {RootStackParamList} from '../App';
+import {useFocusEffect} from '@react-navigation/native';
 import {useRoute} from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import LoginRequiredModal from '../components/LoginRequiredModal';
@@ -65,32 +66,37 @@ const SearchDetail: React.FC = () => {
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
 
-  useEffect(() => {
-    const fetchPlaceDetail = async () => {
-      try {
-        const response = await axios.get('http://211.188.51.4/places/detail', {
-          params: {
-            placeId,
-          },
-        });
+  useFocusEffect(
+    React.useCallback(() => {
+      const fetchPlaceDetail = async () => {
+        setLoading(true);
+        try {
+          const response = await axios.get(
+            'http://211.188.51.4/places/detail',
+            {
+              params: {placeId},
+            },
+          );
 
-        const {placeDetail, recentReviews} = response.data.results;
+          const {placeDetail, recentReviews} = response.data.results;
 
-        setPlaceDetail(placeDetail);
-        setReviews(recentReviews);
-        setIsBookmarked(placeDetail.isBookmarked);
-      } catch (error) {
-        console.error('Error fetching place details:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+          setPlaceDetail(placeDetail);
+          setReviews(recentReviews);
+          setIsBookmarked(placeDetail.isBookmarked);
+        } catch (error) {
+          console.error('Error fetching place details:', error);
+        } finally {
+          setLoading(false);
+        }
+      };
 
-    fetchPlaceDetail();
-  }, [placeId]);
+      fetchPlaceDetail();
+    }, [placeId]),
+  );
 
   const toggleBookmark = async () => {
-    const authToken = await AsyncStorage.getItem('authToken');
+    const authToken = await AsyncStorage.getItem('accessToken');
+    console.log(authToken);
     if (!authToken) {
       setIsModalVisible(true);
       return;
@@ -106,11 +112,14 @@ const SearchDetail: React.FC = () => {
         },
       );
 
+
       if (response.data.isSuccess) {
         if (response.data.results === '북마크 저장 성공') {
           setIsBookmarked(true);
+          console.log('북마크 성공');
         } else if (response.data.results === '북마크 삭제 성공') {
           setIsBookmarked(false);
+          console.log('북마크 해제');
         }
       } else {
         Alert.alert('북마크 처리 중 문제가 발생했습니다.');
@@ -138,7 +147,7 @@ const SearchDetail: React.FC = () => {
   }
 
   const handleReviewButton = async () => {
-    const authToken = await AsyncStorage.getItem('authToken');
+    const authToken = await AsyncStorage.getItem('accessToken');
     if (!authToken) {
       setIsModalVisible(true);
       return;

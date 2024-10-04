@@ -76,7 +76,7 @@ const ReviewForm: React.FC<Props> = () => {
       }
 
       try {
-        const token = await AsyncStorage.getItem('authToken');
+        const token = await AsyncStorage.getItem('accessToken');
 
         if (!token) {
           Alert.alert('인증 오류', '로그인 후 다시 시도해 주세요.');
@@ -293,6 +293,18 @@ const styles = StyleSheet.create({
     borderColor: '#D2D3D3',
     borderWidth: 1,
     backgroundColor: '#F8F9FA',
+  },
+  selectedImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 5,
+  },
+  removeImageText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#FF5252',
+    textAlign: 'center',
+    marginTop: 8,
   },
   submitButton: {
     marginTop: 35,
