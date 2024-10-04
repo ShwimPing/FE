@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-shadow */
-/* eslint-disable react-hooks/exhaustive-deps */
 import React, {useEffect, useState} from 'react';
 import {
   View,
@@ -16,6 +15,7 @@ import {useNavigation, NavigationProp} from '@react-navigation/native';
 import {RootStackParamList} from '../App';
 import {useRoute} from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import LoginRequiredModal from '../components/LoginRequiredModal';
 
 const categoryColors: {[key: string]: string} = {
   TOGETHER: '#F3F5F7',
@@ -63,23 +63,14 @@ const SearchDetail: React.FC = () => {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [isBookmarked, setIsBookmarked] = useState(false);
+  const [isModalVisible, setIsModalVisible] = useState(false);
 
   useEffect(() => {
     const fetchPlaceDetail = async () => {
       try {
-        const authToken = await AsyncStorage.getItem('authToken');
-        if (!authToken) {
-          Alert.alert('인증 오류', '로그인이 필요합니다.');
-          navigation.navigate('Login');
-          return;
-        }
-
         const response = await axios.get('http://211.188.51.4/places/detail', {
           params: {
             placeId,
-          },
-          headers: {
-            Authorization: `Bearer ${authToken}`,
           },
         });
 
@@ -99,14 +90,13 @@ const SearchDetail: React.FC = () => {
   }, [placeId]);
 
   const toggleBookmark = async () => {
-    try {
-      const authToken = await AsyncStorage.getItem('authToken');
-      if (!authToken) {
-        Alert.alert('인증 오류', '로그인이 필요합니다.');
-        navigation.navigate('Login');
-        return;
-      }
+    const authToken = await AsyncStorage.getItem('authToken');
+    if (!authToken) {
+      setIsModalVisible(true);
+      return;
+    }
 
+    try {
       const response = await axios.get(
         `http://211.188.51.4/bookmarks/${placeId}`,
         {
@@ -147,6 +137,25 @@ const SearchDetail: React.FC = () => {
     );
   }
 
+  const handleReviewButton = async () => {
+    const authToken = await AsyncStorage.getItem('authToken');
+    if (!authToken) {
+      setIsModalVisible(true);
+      return;
+    }
+
+    navigation.navigate('ReviewForm', {placeId});
+  };
+
+  const handleModalClose = () => {
+    setIsModalVisible(false);
+  };
+
+  const handleLogin = () => {
+    setIsModalVisible(false);
+    navigation.navigate('Login');
+  };
+
   const renderStars = (rating: number) => {
     const filledStars = Math.floor(rating);
     const emptyStars = 5 - filledStars;
@@ -185,11 +194,16 @@ const SearchDetail: React.FC = () => {
 
   return (
     <View style={styles.container}>
+      <LoginRequiredModal
+        visible={isModalVisible}
+        onClose={handleModalClose}
+        onLogin={handleLogin}
+      />
+
       <ScrollView
         style={styles.content}
         // eslint-disable-next-line react-native/no-inline-styles
-        contentContainerStyle={{paddingBottom: 100}}
-      >
+        contentContainerStyle={{paddingBottom: 100}}>
         <View
           style={[
             styles.categoryBox,
@@ -318,7 +332,7 @@ const SearchDetail: React.FC = () => {
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.footerButton}
-          onPress={() => navigation.navigate('ReviewForm', {placeId})}>
+          onPress={handleReviewButton}>
           <Text style={styles.footerButtonText}>리뷰 작성하기</Text>
         </TouchableOpacity>
       </View>

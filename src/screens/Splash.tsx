@@ -44,7 +44,7 @@ const Splash = () => {
       if (successResponse) {
         const accessToken = successResponse.accessToken;
         await AsyncStorage.setItem('accessToken', accessToken);
-        await postToBackend(accessToken, 'NAVER'); // 백엔드 전송 시 "NAVER"로 전송
+        await postToBackend(accessToken, 'NAVER');
         navigation.navigate('Home');
       } else if (failureResponse) {
         Alert.alert('로그인 실패', failureResponse.message);
