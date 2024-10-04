@@ -23,7 +23,8 @@ import SearchScreen from './screens/SearhScreen';
 import SearchDetail from './screens/SearchDetail';
 import ReviewForm from './screens/ReviewForm';
 import messaging from '@react-native-firebase/messaging';
-import { storeFcmToken } from './services/storageService';
+import {storeFcmToken} from './services/storageService';
+import {AuthProvider} from './services/AuthContext';
 
 const consumerKey = 'XQ774qjn0QvrLziS0efY';
 const consumerSecret = '6OIm7uvnU6';
@@ -121,7 +122,7 @@ const App: React.FC = () => {
   useEffect(() => {
     getFcmToken();
 
-    const unsubscribe = messaging().onTokenRefresh(async (newToken) => {
+    const unsubscribe = messaging().onTokenRefresh(async newToken => {
       console.log('새로운 FCM 토큰:', newToken);
       await storeFcmToken(newToken);
     });
@@ -130,306 +131,308 @@ const App: React.FC = () => {
   }, []);
 
   return (
-    <SafeAreaView style={styles.container}>
-      <NavigationContainer>
-        <Stack.Navigator
-          initialRouteName="Splash"
-          screenOptions={{
-            headerShown: false,
-            animation: 'fade',
-          }}>
-          <Stack.Screen name="Splash" component={Splash} />
-          <Stack.Screen
-            name="Login"
-            component={Login}
-            options={({navigation}) => ({
-              headerShown: true,
-              headerTitle: '로그인',
-              headerTitleAlign: 'center',
-              headerShadowVisible: false,
-              headerTitleStyle: {
-                color: '#1A1A1B',
-                fontFamily: 'Pretendard-Bold',
-                fontSize: 14,
-                fontStyle: 'normal',
-                lineHeight: 21,
-                textAlign: 'center',
-              },
-              headerLeft: () => (
-                <TouchableOpacity onPress={() => navigation.goBack()}>
-                  <BackIcon />
-                </TouchableOpacity>
-              ),
-            })}
-          />
-          <Stack.Screen
-            name="Terms"
-            component={TermsScreen}
-            options={({navigation}) => ({
-              headerShown: true,
-              headerTitle: '회원가입',
-              headerTitleAlign: 'center',
-              headerShadowVisible: false,
-              headerTitleStyle: {
-                color: '#1A1A1B',
-                fontFamily: 'Pretendard-Bold',
-                fontSize: 14,
-                fontStyle: 'normal',
-                lineHeight: 21,
-                textAlign: 'center',
-              },
-              headerLeft: () => (
-                <TouchableOpacity onPress={() => navigation.goBack()}>
-                  <BackIcon />
-                </TouchableOpacity>
-              ),
-            })}
-          />
-          <Stack.Screen
-            name="EmailPassword"
-            component={EmailPasswordScreen}
-            options={({navigation}) => ({
-              headerShown: true,
-              headerTitle: '회원가입',
-              headerTitleAlign: 'center',
-              headerShadowVisible: false,
-              headerTitleStyle: {
-                color: '#1A1A1B',
-                fontFamily: 'Pretendard-Bold',
-                fontSize: 14,
-                fontStyle: 'normal',
-                lineHeight: 21,
-                textAlign: 'center',
-              },
-              headerLeft: () => (
-                <TouchableOpacity onPress={() => navigation.goBack()}>
-                  <BackIcon />
-                </TouchableOpacity>
-              ),
-            })}
-          />
-          <Stack.Screen
-            name="Profile"
-            component={ProfileScreen}
-            options={({navigation}) => ({
-              headerShown: true,
-              headerTitle: '회원가입',
-              headerTitleAlign: 'center',
-              headerShadowVisible: false,
-              headerTitleStyle: {
-                color: '#1A1A1B',
-                fontFamily: 'Pretendard-Bold',
-                fontSize: 14,
-                fontStyle: 'normal',
-                lineHeight: 21,
-                textAlign: 'center',
-              },
-              headerLeft: () => (
-                <TouchableOpacity onPress={() => navigation.goBack()}>
-                  <BackIcon />
-                </TouchableOpacity>
-              ),
-            })}
-          />
-          <Stack.Screen
-            name="SignUpComplete"
-            component={SignUpCompleteScreen}
-            options={({navigation}) => ({
-              headerShown: true,
-              headerTitle: '회원가입',
-              headerTitleAlign: 'center',
-              headerShadowVisible: false,
-              headerTitleStyle: {
-                color: '#1A1A1B',
-                fontFamily: 'Pretendard-Bold',
-                fontSize: 14,
-                fontStyle: 'normal',
-                lineHeight: 21,
-                textAlign: 'center',
-              },
-              headerLeft: () => (
-                <TouchableOpacity onPress={() => navigation.goBack()}>
-                  <BackIcon />
-                </TouchableOpacity>
-              ),
-            })}
-          />
-          <Stack.Screen
-            name="Home"
-            component={Home}
-            options={{
+    <AuthProvider>
+      <SafeAreaView style={styles.container}>
+        <NavigationContainer>
+          <Stack.Navigator
+            initialRouteName="Splash"
+            screenOptions={{
               headerShown: false,
-            }}
-          />
-          <Stack.Screen
-            name="SearchScreen"
-            component={SearchScreen}
-            options={{
-              headerShown: false,
-            }}
-          />
-          <Stack.Screen
-            name="ReviewForm"
-            component={ReviewForm}
-            options={({navigation}) => ({
-              headerShown: true,
-              headerTitle: '리뷰 작성하기',
-              headerTitleAlign: 'center',
-              headerShadowVisible: false,
-              headerTitleStyle: {
-                color: '#1A1A1B',
-                fontFamily: 'Pretendard-Bold',
-                fontSize: 14,
-                fontStyle: 'normal',
-                lineHeight: 21,
-                textAlign: 'center',
-              },
-              headerLeft: () => null,
-              headerBackVisible: false,
-              headerRight: () => (
-                <TouchableOpacity onPress={() => navigation.goBack()}>
-                  <CloseIcon />
-                </TouchableOpacity>
-              ),
-            })}
-          />
-          <Stack.Screen
-            name="SearchDetail"
-            component={SearchDetail}
-            options={({navigation}) => ({
-              headerShown: true,
-              headerTitle: '',
-              headerShadowVisible: false,
-              headerLeft: () => (
-                <TouchableOpacity onPress={() => navigation.goBack()}>
-                  <BackIcon />
-                </TouchableOpacity>
-              ),
-            })}
-          />
-          <Stack.Screen
-            name="ContentsList"
-            component={ContentsList}
-            options={{
-              headerShown: true,
-              headerTitle: '콘텐츠',
-              headerTitleAlign: 'center',
-              headerShadowVisible: false,
-              headerTitleStyle: {
-                color: '#1A1A1B',
-                fontFamily: 'Pretendard-Bold',
-                fontSize: 14,
-              },
-              headerLeft: () => null,
-              headerBackVisible: false,
-            }}
-          />
-          <Stack.Screen
-            name="ContentDetail"
-            component={ContentDetail}
-            options={{
-              headerShown: true,
-              headerTitle: '콘텐츠',
-              headerTitleAlign: 'center',
-              headerShadowVisible: false,
-              headerTitleStyle: {
-                color: '#1A1A1B',
-                fontFamily: 'Pretendard-Bold',
-                fontSize: 14,
-              },
-              headerLeft: () => null,
-              headerBackVisible: false,
-            }}
-          />
-          <Stack.Screen
-            name="MyPage"
-            component={MyPage}
-            options={{
-              headerShown: true,
-              headerTitle: '마이페이지',
-              headerTitleAlign: 'center',
-              headerShadowVisible: false,
-              headerTitleStyle: {
-                color: '#1A1A1B',
-                fontFamily: 'Pretendard-Bold',
-                fontSize: 14,
-              },
-              headerLeft: () => null,
-              headerBackVisible: false,
-            }}
-          />
-          <Stack.Screen
-            name="ProfileEdit"
-            component={ProfileEdit}
-            options={({navigation}) => ({
-              headerShown: true,
-              headerTitle: '프로필 수정',
-              headerTitleAlign: 'center',
-              headerShadowVisible: false,
-              headerTitleStyle: {
-                color: '#1A1A1B',
-                fontFamily: 'Pretendard-Bold',
-                fontSize: 14,
-                fontStyle: 'normal',
-                lineHeight: 21,
-                textAlign: 'center',
-              },
-              headerLeft: () => (
-                <TouchableOpacity onPress={() => navigation.goBack()}>
-                  <BackIcon />
-                </TouchableOpacity>
-              ),
-            })}
-          />
-          <Stack.Screen
-            name="MyReview"
-            component={MyReview}
-            options={({navigation}) => ({
-              headerShown: true,
-              headerTitle: '내 리뷰',
-              headerTitleAlign: 'center',
-              headerShadowVisible: false,
-              headerTitleStyle: {
-                color: '#1A1A1B',
-                fontFamily: 'Pretendard-Bold',
-                fontSize: 14,
-                fontStyle: 'normal',
-                lineHeight: 21,
-                textAlign: 'center',
-              },
-              headerLeft: () => (
-                <TouchableOpacity onPress={() => navigation.goBack()}>
-                  <BackIcon />
-                </TouchableOpacity>
-              ),
-            })}
-          />
-          <Stack.Screen
-            name="MyBookmark"
-            component={MyBookmark}
-            options={({navigation}) => ({
-              headerShown: true,
-              headerTitle: '북마크',
-              headerTitleAlign: 'center',
-              headerShadowVisible: false,
-              headerTitleStyle: {
-                color: '#1A1A1B',
-                fontFamily: 'Pretendard-Bold',
-                fontSize: 14,
-                fontStyle: 'normal',
-                lineHeight: 21,
-                textAlign: 'center',
-              },
-              headerLeft: () => (
-                <TouchableOpacity onPress={() => navigation.goBack()}>
-                  <BackIcon />
-                </TouchableOpacity>
-              ),
-            })}
-          />
-        </Stack.Navigator>
-      </NavigationContainer>
-    </SafeAreaView>
+              animation: 'fade',
+            }}>
+            <Stack.Screen name="Splash" component={Splash} />
+            <Stack.Screen
+              name="Login"
+              component={Login}
+              options={({navigation}) => ({
+                headerShown: true,
+                headerTitle: '로그인',
+                headerTitleAlign: 'center',
+                headerShadowVisible: false,
+                headerTitleStyle: {
+                  color: '#1A1A1B',
+                  fontFamily: 'Pretendard-Bold',
+                  fontSize: 14,
+                  fontStyle: 'normal',
+                  lineHeight: 21,
+                  textAlign: 'center',
+                },
+                headerLeft: () => (
+                  <TouchableOpacity onPress={() => navigation.goBack()}>
+                    <BackIcon />
+                  </TouchableOpacity>
+                ),
+              })}
+            />
+            <Stack.Screen
+              name="Terms"
+              component={TermsScreen}
+              options={({navigation}) => ({
+                headerShown: true,
+                headerTitle: '회원가입',
+                headerTitleAlign: 'center',
+                headerShadowVisible: false,
+                headerTitleStyle: {
+                  color: '#1A1A1B',
+                  fontFamily: 'Pretendard-Bold',
+                  fontSize: 14,
+                  fontStyle: 'normal',
+                  lineHeight: 21,
+                  textAlign: 'center',
+                },
+                headerLeft: () => (
+                  <TouchableOpacity onPress={() => navigation.goBack()}>
+                    <BackIcon />
+                  </TouchableOpacity>
+                ),
+              })}
+            />
+            <Stack.Screen
+              name="EmailPassword"
+              component={EmailPasswordScreen}
+              options={({navigation}) => ({
+                headerShown: true,
+                headerTitle: '회원가입',
+                headerTitleAlign: 'center',
+                headerShadowVisible: false,
+                headerTitleStyle: {
+                  color: '#1A1A1B',
+                  fontFamily: 'Pretendard-Bold',
+                  fontSize: 14,
+                  fontStyle: 'normal',
+                  lineHeight: 21,
+                  textAlign: 'center',
+                },
+                headerLeft: () => (
+                  <TouchableOpacity onPress={() => navigation.goBack()}>
+                    <BackIcon />
+                  </TouchableOpacity>
+                ),
+              })}
+            />
+            <Stack.Screen
+              name="Profile"
+              component={ProfileScreen}
+              options={({navigation}) => ({
+                headerShown: true,
+                headerTitle: '회원가입',
+                headerTitleAlign: 'center',
+                headerShadowVisible: false,
+                headerTitleStyle: {
+                  color: '#1A1A1B',
+                  fontFamily: 'Pretendard-Bold',
+                  fontSize: 14,
+                  fontStyle: 'normal',
+                  lineHeight: 21,
+                  textAlign: 'center',
+                },
+                headerLeft: () => (
+                  <TouchableOpacity onPress={() => navigation.goBack()}>
+                    <BackIcon />
+                  </TouchableOpacity>
+                ),
+              })}
+            />
+            <Stack.Screen
+              name="SignUpComplete"
+              component={SignUpCompleteScreen}
+              options={({navigation}) => ({
+                headerShown: true,
+                headerTitle: '회원가입',
+                headerTitleAlign: 'center',
+                headerShadowVisible: false,
+                headerTitleStyle: {
+                  color: '#1A1A1B',
+                  fontFamily: 'Pretendard-Bold',
+                  fontSize: 14,
+                  fontStyle: 'normal',
+                  lineHeight: 21,
+                  textAlign: 'center',
+                },
+                headerLeft: () => (
+                  <TouchableOpacity onPress={() => navigation.goBack()}>
+                    <BackIcon />
+                  </TouchableOpacity>
+                ),
+              })}
+            />
+            <Stack.Screen
+              name="Home"
+              component={Home}
+              options={{
+                headerShown: false,
+              }}
+            />
+            <Stack.Screen
+              name="SearchScreen"
+              component={SearchScreen}
+              options={{
+                headerShown: false,
+              }}
+            />
+            <Stack.Screen
+              name="ReviewForm"
+              component={ReviewForm}
+              options={({navigation}) => ({
+                headerShown: true,
+                headerTitle: '리뷰 작성하기',
+                headerTitleAlign: 'center',
+                headerShadowVisible: false,
+                headerTitleStyle: {
+                  color: '#1A1A1B',
+                  fontFamily: 'Pretendard-Bold',
+                  fontSize: 14,
+                  fontStyle: 'normal',
+                  lineHeight: 21,
+                  textAlign: 'center',
+                },
+                headerLeft: () => null,
+                headerBackVisible: false,
+                headerRight: () => (
+                  <TouchableOpacity onPress={() => navigation.goBack()}>
+                    <CloseIcon />
+                  </TouchableOpacity>
+                ),
+              })}
+            />
+            <Stack.Screen
+              name="SearchDetail"
+              component={SearchDetail}
+              options={({navigation}) => ({
+                headerShown: true,
+                headerTitle: '',
+                headerShadowVisible: false,
+                headerLeft: () => (
+                  <TouchableOpacity onPress={() => navigation.goBack()}>
+                    <BackIcon />
+                  </TouchableOpacity>
+                ),
+              })}
+            />
+            <Stack.Screen
+              name="ContentsList"
+              component={ContentsList}
+              options={{
+                headerShown: true,
+                headerTitle: '콘텐츠',
+                headerTitleAlign: 'center',
+                headerShadowVisible: false,
+                headerTitleStyle: {
+                  color: '#1A1A1B',
+                  fontFamily: 'Pretendard-Bold',
+                  fontSize: 14,
+                },
+                headerLeft: () => null,
+                headerBackVisible: false,
+              }}
+            />
+            <Stack.Screen
+              name="ContentDetail"
+              component={ContentDetail}
+              options={{
+                headerShown: true,
+                headerTitle: '콘텐츠',
+                headerTitleAlign: 'center',
+                headerShadowVisible: false,
+                headerTitleStyle: {
+                  color: '#1A1A1B',
+                  fontFamily: 'Pretendard-Bold',
+                  fontSize: 14,
+                },
+                headerLeft: () => null,
+                headerBackVisible: false,
+              }}
+            />
+            <Stack.Screen
+              name="MyPage"
+              component={MyPage}
+              options={{
+                headerShown: true,
+                headerTitle: '마이페이지',
+                headerTitleAlign: 'center',
+                headerShadowVisible: false,
+                headerTitleStyle: {
+                  color: '#1A1A1B',
+                  fontFamily: 'Pretendard-Bold',
+                  fontSize: 14,
+                },
+                headerLeft: () => null,
+                headerBackVisible: false,
+              }}
+            />
+            <Stack.Screen
+              name="ProfileEdit"
+              component={ProfileEdit}
+              options={({navigation}) => ({
+                headerShown: true,
+                headerTitle: '프로필 수정',
+                headerTitleAlign: 'center',
+                headerShadowVisible: false,
+                headerTitleStyle: {
+                  color: '#1A1A1B',
+                  fontFamily: 'Pretendard-Bold',
+                  fontSize: 14,
+                  fontStyle: 'normal',
+                  lineHeight: 21,
+                  textAlign: 'center',
+                },
+                headerLeft: () => (
+                  <TouchableOpacity onPress={() => navigation.goBack()}>
+                    <BackIcon />
+                  </TouchableOpacity>
+                ),
+              })}
+            />
+            <Stack.Screen
+              name="MyReview"
+              component={MyReview}
+              options={({navigation}) => ({
+                headerShown: true,
+                headerTitle: '내 리뷰',
+                headerTitleAlign: 'center',
+                headerShadowVisible: false,
+                headerTitleStyle: {
+                  color: '#1A1A1B',
+                  fontFamily: 'Pretendard-Bold',
+                  fontSize: 14,
+                  fontStyle: 'normal',
+                  lineHeight: 21,
+                  textAlign: 'center',
+                },
+                headerLeft: () => (
+                  <TouchableOpacity onPress={() => navigation.goBack()}>
+                    <BackIcon />
+                  </TouchableOpacity>
+                ),
+              })}
+            />
+            <Stack.Screen
+              name="MyBookmark"
+              component={MyBookmark}
+              options={({navigation}) => ({
+                headerShown: true,
+                headerTitle: '북마크',
+                headerTitleAlign: 'center',
+                headerShadowVisible: false,
+                headerTitleStyle: {
+                  color: '#1A1A1B',
+                  fontFamily: 'Pretendard-Bold',
+                  fontSize: 14,
+                  fontStyle: 'normal',
+                  lineHeight: 21,
+                  textAlign: 'center',
+                },
+                headerLeft: () => (
+                  <TouchableOpacity onPress={() => navigation.goBack()}>
+                    <BackIcon />
+                  </TouchableOpacity>
+                ),
+              })}
+            />
+          </Stack.Navigator>
+        </NavigationContainer>
+      </SafeAreaView>
+    </AuthProvider>
   );
 };
 

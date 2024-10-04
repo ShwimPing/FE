@@ -14,7 +14,7 @@ import {useNavigation, useFocusEffect} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {RootStackParamList} from '../../App';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
+import apiClient from '../../services/apiClient';
 import Footer from '../../components/Footer';
 
 type MyPageNavigationProp = NativeStackNavigationProp<
@@ -38,11 +38,7 @@ const MyPage = () => {
             return;
           }
 
-          const response = await axios.get('http://211.188.51.4/mypage', {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
+          const response = await apiClient.get('/mypage');
 
           if (response.data.isSuccess) {
             setNickname(response.data.results.nickname);
@@ -66,22 +62,9 @@ const MyPage = () => {
     setIsPushEnabled(newPushState);
 
     try {
-      const token = await AsyncStorage.getItem('authToken');
-      if (!token) {
-        Alert.alert('오류', '인증 토큰이 없습니다. 다시 로그인해 주세요.');
-        return;
-      }
-
-      const response = await axios.post(
-        'http://211.188.51.4/mypage/alarm',
-        { isPushEnabled: newPushState },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await apiClient.post('/mypage/alarm', {
+        isPushEnabled: newPushState,
+      });
 
       if (response.data.isSuccess) {
         console.log('푸시 알림 설정이 성공적으로 업데이트되었습니다.');
@@ -106,18 +89,7 @@ const MyPage = () => {
           text: '확인',
           onPress: async () => {
             try {
-              const token = await AsyncStorage.getItem('authToken');
-              if (!token) {
-                Alert.alert('오류', '인증 토큰이 없습니다. 다시 로그인해 주세요.');
-                return;
-              }
-
-              const response = await axios.delete('http://211.188.51.4/auth/withdraw', {
-                headers: {
-                  'Content-Type': 'application/json',
-                  Authorization: `Bearer ${token}`,
-                },
-              });
+              const response = await apiClient.delete('/auth/withdraw');
 
               if (response.data.isSuccess) {
                 Alert.alert('성공', '회원탈퇴가 완료되었습니다.');
@@ -140,7 +112,6 @@ const MyPage = () => {
   const handleLogout = async () => {
     try {
       await AsyncStorage.removeItem('authToken');
-      await AsyncStorage.removeItem('userNickname');
       navigation.reset({
         index: 0,
         routes: [{ name: 'Splash' }],
