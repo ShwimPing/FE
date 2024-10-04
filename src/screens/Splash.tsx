@@ -14,7 +14,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {RootStackParamList} from '../App';
 import NaverLogin from '@react-native-seoul/naver-login';
 import axios from 'axios';
-import {KakaoOAuthToken, login as kakaoLogin} from '@react-native-seoul/kakao-login';  // 카카오 로그인 관련 임포트
+import {KakaoOAuthToken, login as kakaoLogin} from '@react-native-seoul/kakao-login';
 
 type SplashScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -44,6 +44,7 @@ const Splash = () => {
       if (successResponse) {
         const accessToken = successResponse.accessToken;
         await AsyncStorage.setItem('accessToken', accessToken);
+        await AsyncStorage.setItem('loginProvider', 'NAVER');
         await postToBackend(accessToken, 'NAVER');
         navigation.navigate('Home');
       } else if (failureResponse) {
@@ -60,6 +61,8 @@ const Splash = () => {
       const accessToken = token.accessToken;
 
       await AsyncStorage.setItem('accessToken', accessToken);
+      await AsyncStorage.setItem('loginProvider', 'KAKAO');
+
       await postToBackend(accessToken, 'KAKAO');
       navigation.navigate('Home');
     } catch (error) {
@@ -75,10 +78,17 @@ const Splash = () => {
       const response = await axios.post(
         `http://211.188.51.4/auth/login/${provider}`,
         {accessToken},
-        {headers: {'Content-Type': 'application/json'}}
+        {headers: {'Content-Type': 'application/json'}},
       );
 
       console.log('서버 응답:', response.data);
+    if (response.data.isSuccess && response.data.results) {
+      const serverAccessToken = response.data.results.accessToken;
+      console.log('서버에서 받은 액세스 토큰:', serverAccessToken);
+
+      await AsyncStorage.setItem('accessToken', serverAccessToken);
+      console.log('새로운 토큰 저장 완료');
+    }
     } catch (error) {
       console.error(`${provider} 로그인 백엔드 전송 에러:`, error);
       Alert.alert(

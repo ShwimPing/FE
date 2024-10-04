@@ -28,21 +28,26 @@ const MyPage = () => {
   const [isPushEnabled, setIsPushEnabled] = useState(false);
   const [nickname, setNickname] = useState('');
   const [loading, setLoading] = useState(true);
-  const [isLoggedIn, setIsLoggedIn] = useState(false); // 로그인 상태 관리
-  const [isModalVisible, setIsModalVisible] = useState(false); // 모달 표시 상태 관리
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [loginProvider, setLoginProvider] = useState(''); // 계정 유형 상태 추가
 
   useFocusEffect(
     React.useCallback(() => {
       const fetchUserInfo = async () => {
         try {
-          const token = await AsyncStorage.getItem('authToken');
-          console.log(token);
+          const token = await AsyncStorage.getItem('accessToken');
+          const provider = await AsyncStorage.getItem('loginProvider');
+          // console.log('로그인 제공자:', provider);
+
           if (!token) {
-            setIsLoggedIn(false); // 비로그인 상태 설정
-            setIsModalVisible(true); // 비로그인 시 모달 표시
+            setIsLoggedIn(false);
+            setIsModalVisible(true);
             setLoading(false);
             return;
           }
+
+          setLoginProvider(provider || '');
 
           const response = await apiClient.get('/mypage');
 
@@ -66,6 +71,18 @@ const MyPage = () => {
 
   const handleModalClose = () => {
     setIsModalVisible(false);
+  };
+
+  const getProfileIcon = () => {
+    if (loginProvider === 'NAVER') {
+      return require('../../../assets/images/navericon.png');
+    } else if (loginProvider === 'KAKAO') {
+      return require('../../../assets/images/kakaoicon.png');
+    } else if (loginProvider === 'SELF') {
+      return require('../../../assets/images/profile.png');
+    } else {
+      return require('../../../assets/images/profile.png');
+    }
   };
 
   const toggleSwitch = async () => {
@@ -153,8 +170,8 @@ const MyPage = () => {
       {isLoggedIn && (
         <ScrollView contentContainerStyle={styles.container}>
           <View style={styles.profileSection}>
-            <Image
-              source={require('../../../assets/images/profile.png')}
+          <Image
+              source={getProfileIcon()}
               style={styles.profileImage}
             />
             <View style={styles.nicknameSection}>
@@ -175,7 +192,7 @@ const MyPage = () => {
             <View style={styles.accountSection}>
               <Text style={styles.connectedAccount}>연결된 계정</Text>
               <Image
-                source={require('../../../assets/images/navericon.png')}
+                source={getProfileIcon()}
                 style={styles.accountIcon}
               />
             </View>
