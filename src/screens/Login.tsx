@@ -8,13 +8,14 @@ import {
   Image,
   Alert,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {RootStackParamList} from '../App';
+import { useAuth } from '../services/AuthContext';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
 
 const Login: React.FC<Props> = ({navigation}) => {
+  const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
@@ -25,31 +26,10 @@ const Login: React.FC<Props> = ({navigation}) => {
     }
 
     try {
-      const response = await fetch('http://211.188.51.4/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email,
-          password,
-        }),
-      });
-
-      const data = await response.json();
-
-      console.log('Response Data:', data);
-
-      if (data.isSuccess && data.results && data.results.accessToken) {
-        await AsyncStorage.setItem('authToken', data.results.accessToken);
-
-        navigation.navigate('Home');
-      } else {
-        Alert.alert('로그인 실패', data.message || '로그인에 실패했습니다.');
-      }
+      await login(email, password);
+      navigation.navigate('Home');
     } catch (error) {
-      console.error('Error during login:', error);
-      Alert.alert('로그인 오류', '로그인 중 오류가 발생했습니다. 다시 시도해 주세요.');
+      Alert.alert('로그인 실패', '이메일 또는 비밀번호가 올바르지 않습니다.');
     }
   };
 

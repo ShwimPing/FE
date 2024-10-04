@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   View,
   TextInput,
@@ -14,12 +14,89 @@ import {useNavigation} from '@react-navigation/native';
 import MapComponent from '../components/MapComponent';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {RootStackParamList} from '../App';
+import Voice from 'react-native-voice';
+
+import {PermissionsAndroid, Platform} from 'react-native';
+import {request, PERMISSIONS, RESULTS} from 'react-native-permissions';
+
+const requestMicrophonePermission = async () => {
+  if (Platform.OS === 'android') {
+    try {
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
+        {
+          title: '마이크 사용 권한 요청',
+          message: '앱에서 음성 인식을 위해 마이크 접근이 필요합니다.',
+          buttonNeutral: '나중에',
+          buttonNegative: '취소',
+          buttonPositive: '허용',
+        },
+      );
+      return granted === PermissionsAndroid.RESULTS.GRANTED;
+    } catch (err) {
+      console.warn(err);
+      return false;
+    }
+  } else if (Platform.OS === 'ios') {
+    const result = await request(PERMISSIONS.IOS.MICROPHONE);
+    return result === RESULTS.GRANTED;
+  }
+};
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Home'>;
 
 const Home: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const [showVoiceRecognition, setShowVoiceRecognition] = useState(false);
+  const [recognizedText, setRecognizedText] = useState<string>('');
+  const [isListening, setIsListening] = useState(false);
+
+  useEffect(() => {
+    Voice.onSpeechStart = () => {
+      console.log('음성 인식이 시작되었습니다.');
+    };
+
+    Voice.onSpeechEnd = () => {
+      console.log('음성 인식이 종료되었습니다.');
+    };
+
+    Voice.onSpeechError = e => {
+      console.error('음성 인식 오류 발생: ', e);
+    };
+
+    Voice.onSpeechResults = (event: any) => {
+      if (event.value) {
+        setRecognizedText(event.value[0]);
+        console.log('인식된 텍스트: ', event.value[0]);
+      }
+    };
+
+    return () => {
+      Voice.destroy();
+    };
+  }, []);
+
+  const startVoiceRecognition = async () => {
+    const hasPermission = await requestMicrophonePermission();
+    if (!hasPermission) {
+      console.log('마이크 권한이 필요합니다.');
+      return;
+    }
+
+    try {
+      if (isListening) {
+        await Voice.stop();
+        setIsListening(false);
+        console.log('음성 인식 중지');
+      } else {
+        await Voice.start('ko-KR');
+        setIsListening(true);
+        console.log('음성 인식 시작');
+      }
+    } catch (e) {
+      console.error('음성 인식 시작/중지 오류: ', e);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -91,7 +168,9 @@ const Home: React.FC = () => {
                   "제일 가까운 쉼터 찾아줘"
                 </Text>
               </View>
-              <TouchableOpacity style={styles.microphoneButton}>
+              <TouchableOpacity
+                style={styles.microphoneButton}
+                onPress={startVoiceRecognition}>
                 <Svg width="27" height="37" viewBox="0 0 27 37" fill="none">
                   <Path
                     d="M25.1667 15.2918V18.6252C25.1667 25.0685 19.9434 30.2918 13.5 30.2918M1.83337 15.2918V18.6252C1.83337 25.0685 7.05672 30.2918 13.5 30.2918M13.5 30.2918V35.2918M6.83337 35.2918H20.1667M13.5 23.6252C10.7386 23.6252 8.50004 21.3866 8.50004 18.6252V6.9585C8.50004 4.19707 10.7386 1.9585 13.5 1.9585C16.2615 1.9585 18.5 4.19707 18.5 6.9585V18.6252C18.5 21.3866 16.2615 23.6252 13.5 23.6252Z"
