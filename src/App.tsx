@@ -22,9 +22,8 @@ import NaverLogin from '@react-native-seoul/naver-login';
 import SearchScreen from './screens/SearhScreen';
 import SearchDetail from './screens/SearchDetail';
 import ReviewForm from './screens/ReviewForm';
-import messaging from '@react-native-firebase/messaging';
-import {storeFcmToken} from './services/storageService';
 import {AuthProvider} from './services/AuthContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const consumerKey = 'XQ774qjn0QvrLziS0efY';
 const consumerSecret = '6OIm7uvnU6';
@@ -96,6 +95,19 @@ const CloseIcon = () => (
 
 const App: React.FC = () => {
   useEffect(() => {
+    const clearAsyncStorage = async () => {
+      try {
+        await AsyncStorage.clear();
+        // console.log('AsyncStorage cleared on app start');
+      } catch (error) {
+        console.error('Failed to clear AsyncStorage:', error);
+      }
+    };
+
+    clearAsyncStorage();
+  }, []);
+
+  useEffect(() => {
     try {
       NaverLogin.initialize({
         appName,
@@ -103,32 +115,32 @@ const App: React.FC = () => {
         consumerSecret,
         disableNaverAppAuthIOS: true,
       });
-      console.log('Naver Login initialized successfully');
+      // console.log('Naver Login initialized successfully');
     } catch (error) {
       console.error('Naver Login initialization failed:', error);
     }
   }, []);
 
-  const getFcmToken = async () => {
-    const token = await messaging().getToken();
-    if (token) {
-      console.log('FCM Token:', token);
-      await storeFcmToken(token);
-    } else {
-      console.log('토큰을 가져오는 데 실패했습니다.');
-    }
-  };
+  // const getFcmToken = async () => {
+  //   const token = await messaging().getToken();
+  //   if (token) {
+  //     console.log('FCM Token:', token);
+  //     await storeFcmToken(token);
+  //   } else {
+  //     console.log('토큰을 가져오는 데 실패했습니다.');
+  //   }
+  // };
 
-  useEffect(() => {
-    getFcmToken();
+  // useEffect(() => {
+  //   getFcmToken();
 
-    const unsubscribe = messaging().onTokenRefresh(async newToken => {
-      console.log('새로운 FCM 토큰:', newToken);
-      await storeFcmToken(newToken);
-    });
+  //   const unsubscribe = messaging().onTokenRefresh(async newToken => {
+  //     console.log('새로운 FCM 토큰:', newToken);
+  //     await storeFcmToken(newToken);
+  //   });
 
-    return unsubscribe;
-  }, []);
+  //   return unsubscribe;
+  // }, []);
 
   return (
     <AuthProvider>
