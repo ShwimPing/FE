@@ -6,11 +6,13 @@ import {
   StyleSheet,
   Modal,
   TouchableWithoutFeedback,
+  Alert,
 } from 'react-native';
 import Svg, {Path, G} from 'react-native-svg';
 import {useNavigation} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {RootStackParamList} from '../App';
+import axios from 'axios';
 import {KakaoOAuthToken, login as kakaoLogin} from '@react-native-seoul/kakao-login';
 import NaverLogin from '@react-native-seoul/naver-login';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -26,6 +28,31 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Login'>;
 const LoginRequiredModal: React.FC<LoginRequiredModalProps> = ({visible, onClose}) => {
   const navigation = useNavigation<NavigationProp>();
 
+  const postToBackend = async (accessToken: string, provider: string) => {
+    try {
+      console.log(`${provider} 로그인으로 전송할 데이터:`, {accessToken});
+      const response = await axios.post(
+        `http://211.188.51.4/auth/login/${provider}`,
+        {accessToken},
+        {headers: {'Content-Type': 'application/json'}},
+      );
+
+      console.log('서버 응답:', response.data);
+      if (response.data.isSuccess && response.data.results) {
+        const serverAccessToken = response.data.results.accessToken;
+        console.log('서버에서 받은 액세스 토큰:', serverAccessToken);
+
+        await AsyncStorage.setItem('accessToken', serverAccessToken);
+      }
+    } catch (error) {
+      console.error(`${provider} 로그인 백엔드 전송 에러:`, error);
+      Alert.alert(
+        `${provider} 로그인 실패`,
+        '서버와 통신 중 문제가 발생했습니다. 다시 시도해 주세요.',
+      );
+    }
+  };
+
   const loginWithNaver = async () => {
     try {
       const {successResponse} = await NaverLogin.login();
@@ -33,6 +60,9 @@ const LoginRequiredModal: React.FC<LoginRequiredModalProps> = ({visible, onClose
       if (successResponse) {
         const accessToken = successResponse.accessToken;
         await AsyncStorage.setItem('accessToken', accessToken);
+        await AsyncStorage.setItem('loginProvider', 'NAVER');
+        await postToBackend(accessToken, 'NAVER');
+
         onClose();
         navigation.navigate('Home');
       }
@@ -46,6 +76,9 @@ const LoginRequiredModal: React.FC<LoginRequiredModalProps> = ({visible, onClose
       const token: KakaoOAuthToken = await kakaoLogin();
       const accessToken = token.accessToken;
       await AsyncStorage.setItem('accessToken', accessToken);
+      await AsyncStorage.setItem('loginProvider', 'KAKAO');
+      await postToBackend(accessToken, 'KAKAO');
+
       onClose();
       navigation.navigate('Home');
     } catch (error) {

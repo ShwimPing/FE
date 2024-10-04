@@ -44,6 +44,7 @@ const Splash = () => {
       if (successResponse) {
         const accessToken = successResponse.accessToken;
         await AsyncStorage.setItem('accessToken', accessToken);
+        await AsyncStorage.setItem('loginProvider', 'NAVER');
         await postToBackend(accessToken, 'NAVER');
         navigation.navigate('Home');
       } else if (failureResponse) {
@@ -60,6 +61,8 @@ const Splash = () => {
       const accessToken = token.accessToken;
 
       await AsyncStorage.setItem('accessToken', accessToken);
+      await AsyncStorage.setItem('loginProvider', 'KAKAO');
+
       await postToBackend(accessToken, 'KAKAO');
       navigation.navigate('Home');
     } catch (error) {

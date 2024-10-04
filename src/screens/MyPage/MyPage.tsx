@@ -30,19 +30,24 @@ const MyPage = () => {
   const [loading, setLoading] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [loginProvider, setLoginProvider] = useState(''); // 계정 유형 상태 추가
 
   useFocusEffect(
     React.useCallback(() => {
       const fetchUserInfo = async () => {
         try {
           const token = await AsyncStorage.getItem('accessToken');
-          // console.log(token);
+          const provider = await AsyncStorage.getItem('loginProvider');
+          // console.log('로그인 제공자:', provider);
+
           if (!token) {
             setIsLoggedIn(false);
             setIsModalVisible(true);
             setLoading(false);
             return;
           }
+
+          setLoginProvider(provider || '');
 
           const response = await apiClient.get('/mypage');
 
@@ -66,6 +71,18 @@ const MyPage = () => {
 
   const handleModalClose = () => {
     setIsModalVisible(false);
+  };
+
+  const getProfileIcon = () => {
+    if (loginProvider === 'NAVER') {
+      return require('../../../assets/images/navericon.png');
+    } else if (loginProvider === 'KAKAO') {
+      return require('../../../assets/images/kakaoicon.png');
+    } else if (loginProvider === 'SELF') {
+      return require('../../../assets/images/profile.png');
+    } else {
+      return require('../../../assets/images/profile.png');
+    }
   };
 
   const toggleSwitch = async () => {
@@ -153,8 +170,8 @@ const MyPage = () => {
       {isLoggedIn && (
         <ScrollView contentContainerStyle={styles.container}>
           <View style={styles.profileSection}>
-            <Image
-              source={require('../../../assets/images/profile.png')}
+          <Image
+              source={getProfileIcon()}
               style={styles.profileImage}
             />
             <View style={styles.nicknameSection}>
@@ -175,7 +192,7 @@ const MyPage = () => {
             <View style={styles.accountSection}>
               <Text style={styles.connectedAccount}>연결된 계정</Text>
               <Image
-                source={require('../../../assets/images/navericon.png')}
+                source={getProfileIcon()}
                 style={styles.accountIcon}
               />
             </View>

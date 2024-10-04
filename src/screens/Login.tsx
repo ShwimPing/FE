@@ -34,6 +34,7 @@ const Login: React.FC<Props> = ({navigation}) => {
 
     try {
       await login(email, password);
+      await AsyncStorage.setItem('loginProvider', 'SELF');
       navigation.navigate('Home');
     } catch (error) {
       Alert.alert('로그인 실패', '이메일 또는 비밀번호가 올바르지 않습니다.');
@@ -49,6 +50,7 @@ const Login: React.FC<Props> = ({navigation}) => {
 
         await AsyncStorage.setItem('accessToken', accessToken);
         const storedToken = await AsyncStorage.getItem('accessToken');
+        await AsyncStorage.setItem('loginProvider', 'NAVER');
         console.log('저장된 네이버 토큰: ', storedToken);
 
         await postToBackend(accessToken, 'NAVER');
@@ -68,6 +70,8 @@ const Login: React.FC<Props> = ({navigation}) => {
       const accessToken = token.accessToken;
 
       await AsyncStorage.setItem('accessToken', accessToken);
+      await AsyncStorage.setItem('loginProvider', 'KAKAO');
+
       await postToBackend(accessToken, 'KAKAO');
       navigation.navigate('Home');
     } catch (error) {
