@@ -24,6 +24,7 @@ import SearchDetail from './screens/SearchDetail';
 import ReviewForm from './screens/ReviewForm';
 import {AuthProvider} from './services/AuthContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import ProfileCompleteScreen from './screens/Signup/ProfileCompleteScreen';
 
 const consumerKey = 'XQ774qjn0QvrLziS0efY';
 const consumerSecret = '6OIm7uvnU6';
@@ -38,6 +39,7 @@ export type RootStackParamList = {
   EmailPassword: undefined;
   Profile: undefined;
   SignUpComplete: undefined;
+  ProfileComplete: undefined;
   Home: undefined;
   SearchScreen: undefined;
   SearchDetail: {placeId: number};
@@ -121,26 +123,6 @@ const App: React.FC = () => {
     }
   }, []);
 
-  // const getFcmToken = async () => {
-  //   const token = await messaging().getToken();
-  //   if (token) {
-  //     console.log('FCM Token:', token);
-  //     await storeFcmToken(token);
-  //   } else {
-  //     console.log('토큰을 가져오는 데 실패했습니다.');
-  //   }
-  // };
-
-  // useEffect(() => {
-  //   getFcmToken();
-
-  //   const unsubscribe = messaging().onTokenRefresh(async newToken => {
-  //     console.log('새로운 FCM 토큰:', newToken);
-  //     await storeFcmToken(newToken);
-  //   });
-
-  //   return unsubscribe;
-  // }, []);
 
   return (
     <AuthProvider>
@@ -251,6 +233,29 @@ const App: React.FC = () => {
               options={({navigation}) => ({
                 headerShown: true,
                 headerTitle: '회원가입',
+                headerTitleAlign: 'center',
+                headerShadowVisible: false,
+                headerTitleStyle: {
+                  color: '#1A1A1B',
+                  fontFamily: 'Pretendard-Bold',
+                  fontSize: 14,
+                  fontStyle: 'normal',
+                  lineHeight: 21,
+                  textAlign: 'center',
+                },
+                headerLeft: () => (
+                  <TouchableOpacity onPress={() => navigation.goBack()}>
+                    <BackIcon />
+                  </TouchableOpacity>
+                ),
+              })}
+            />
+            <Stack.Screen
+              name="ProfileComplete"
+              component={ProfileCompleteScreen}
+              options={({navigation}) => ({
+                headerShown: true,
+                headerTitle: '프로필 등록',
                 headerTitleAlign: 'center',
                 headerShadowVisible: false,
                 headerTitleStyle: {

@@ -33,10 +33,21 @@ const Login: React.FC<Props> = ({navigation}) => {
     }
 
     try {
-      await login(email, password);
-      await AsyncStorage.setItem('loginProvider', 'SELF');
-      navigation.navigate('Home');
+      const data = await login(email, password);
+
+      if (data?.results) {
+        const {role} = data.results;
+
+        if (role === 'GUEST') {
+          navigation.navigate('Profile');
+        } else if (role === 'USER') {
+          navigation.navigate('Home');
+        } else {
+          Alert.alert('로그인 실패', '유효하지 않은 사용자 역할입니다.');
+        }
+      }
     } catch (error) {
+      console.error('로그인 실패:', error);
       Alert.alert('로그인 실패', '이메일 또는 비밀번호가 올바르지 않습니다.');
     }
   };
@@ -94,12 +105,22 @@ const Login: React.FC<Props> = ({navigation}) => {
       );
 
       console.log('서버 응답:', response.data);
-    if (response.data.isSuccess && response.data.results) {
-      const serverAccessToken = response.data.results.accessToken;
-      console.log('서버에서 받은 액세스 토큰:', serverAccessToken);
+      if (response.data.isSuccess && response.data.results) {
+        const serverAccessToken = response.data.results.accessToken;
+        const role = response.data.results.role;
+        console.log('서버에서 받은 액세스 토큰:', serverAccessToken);
+        console.log('서버에서 받은 role:', role);
 
-      await AsyncStorage.setItem('accessToken', serverAccessToken);
-    }
+        await AsyncStorage.setItem('accessToken', serverAccessToken);
+
+        if (role === 'GUEST') {
+          navigation.navigate('Profile');
+        } else if (role === 'USER') {
+          navigation.navigate('Home');
+        } else {
+          Alert.alert('로그인 실패', '유효하지 않은 사용자 역할입니다.');
+        }
+      }
     } catch (error) {
       console.error(`${provider} 로그인 백엔드 전송 에러:`, error);
       Alert.alert(

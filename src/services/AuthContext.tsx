@@ -1,10 +1,16 @@
-import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
+import React, {
+  createContext,
+  useState,
+  useEffect,
+  useContext,
+  ReactNode,
+} from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface AuthContextType {
   accessToken: string | null;
   refreshToken: string | null;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<LoginResponse>;
   logout: () => void;
   refreshAccessToken: () => Promise<void>;
 }
@@ -15,7 +21,17 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+interface LoginResponse {
+  isSuccess: boolean;
+  message?: string;
+  results?: {
+    accessToken: string;
+    refreshToken?: string;
+    role: 'GUEST' | 'USER';
+  };
+}
+
+export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [refreshToken, setRefreshToken] = useState<string | null>(null);
 
@@ -23,24 +39,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const loadTokens = async () => {
       const storedAccessToken = await AsyncStorage.getItem('accessToken');
       const storedRefreshToken = await AsyncStorage.getItem('refreshToken');
-      if (storedAccessToken) { setAccessToken(storedAccessToken); }
-      if (storedRefreshToken) { setRefreshToken(storedRefreshToken); }
+      if (storedAccessToken) {
+        setAccessToken(storedAccessToken);
+      }
+      if (storedRefreshToken) {
+        setRefreshToken(storedRefreshToken);
+      }
     };
     loadTokens();
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = async (
+    email: string,
+    password: string,
+  ): Promise<LoginResponse> => {
     try {
       const response = await fetch('http://211.188.51.4/auth/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({email, password}),
       });
 
       const data = await response.json();
 
       if (data.isSuccess && data.results) {
-        const { accessToken: newAccessToken, refreshToken: newRefreshToken } = data.results;
+        const {accessToken: newAccessToken, refreshToken: newRefreshToken} =
+          data.results;
 
         if (newAccessToken) {
           setAccessToken(newAccessToken);
@@ -52,6 +76,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           await AsyncStorage.setItem('refreshToken', newRefreshToken);
         }
 
+        return data;
       } else {
         throw new Error(data.message || '로그인 실패');
       }
@@ -70,7 +95,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const refreshAccessToken = async () => {
     try {
-      if (!refreshToken) { throw new Error('리프레시 토큰이 없습니다.'); }
+      if (!refreshToken) {
+        throw new Error('리프레시 토큰이 없습니다.');
+      }
 
       const response = await fetch('http://211.188.51.4/auth/reissue', {
         method: 'POST',
@@ -95,7 +122,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ accessToken, refreshToken, login, logout, refreshAccessToken }}>
+    <AuthContext.Provider
+      value={{accessToken, refreshToken, login, logout, refreshAccessToken}}>
       {children}
     </AuthContext.Provider>
   );
