@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-shadow */
-import React, { useState, useEffect } from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   View,
   Text,
@@ -10,13 +10,12 @@ import {
   Alert,
   Keyboard,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../../App';
+import {NativeStackScreenProps} from '@react-navigation/native-stack';
+import {RootStackParamList} from '../../App';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'EmailPassword'>;
 
-const EmailPasswordScreen: React.FC<Props> = ({ navigation }) => {
+const EmailPasswordScreen: React.FC<Props> = ({navigation}) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -30,8 +29,14 @@ const EmailPasswordScreen: React.FC<Props> = ({ navigation }) => {
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
   useEffect(() => {
-    const showSubscription = Keyboard.addListener('keyboardDidShow', _keyboardDidShow);
-    const hideSubscription = Keyboard.addListener('keyboardDidHide', _keyboardDidHide);
+    const showSubscription = Keyboard.addListener(
+      'keyboardDidShow',
+      _keyboardDidShow,
+    );
+    const hideSubscription = Keyboard.addListener(
+      'keyboardDidHide',
+      _keyboardDidHide,
+    );
 
     return () => {
       showSubscription.remove();
@@ -76,23 +81,49 @@ const EmailPasswordScreen: React.FC<Props> = ({ navigation }) => {
       validateConfirmPassword(confirmPassword);
     }
     setIsFormValid(
-      validateEmail(email) && validatePassword(password) && validateConfirmPassword(confirmPassword)
+      validateEmail(email) &&
+        validatePassword(password) &&
+        validateConfirmPassword(confirmPassword),
     );
-  }, [email, password, confirmPassword, emailTouched, passwordTouched, confirmPasswordTouched, validateConfirmPassword]);
+  }, [
+    email,
+    password,
+    confirmPassword,
+    emailTouched,
+    passwordTouched,
+    confirmPasswordTouched,
+    validateConfirmPassword,
+  ]);
 
-  const handleSaveToStorage = async () => {
+  const handleSaveToStorageAndSignUp = async () => {
     if (!isFormValid) {
       Alert.alert('입력한 정보를 다시 확인해 주세요.');
       return;
     }
 
     try {
-      await AsyncStorage.setItem('userEmail', email);
-      await AsyncStorage.setItem('userPassword', password);
 
-      navigation.navigate('Profile');
+      const response = await fetch('http://211.188.51.4/auth/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.isSuccess) {
+        navigation.navigate('SignUpComplete');
+      } else {
+        Alert.alert(`회원가입 실패: ${data.message}`);
+      }
     } catch (error) {
-      console.error(error);
+      console.error('회원가입 중 오류:', error);
+      Alert.alert('회원가입 중 오류가 발생했습니다.');
     }
   };
 
@@ -106,9 +137,11 @@ const EmailPasswordScreen: React.FC<Props> = ({ navigation }) => {
             placeholder="이메일을 입력해 주세요."
             placeholderTextColor="#8E9398"
             value={email}
-            onChangeText={(text) => {
+            onChangeText={text => {
               setEmail(text);
-              if (!emailTouched) {setEmailTouched(true);}
+              if (!emailTouched) {
+                setEmailTouched(true);
+              }
             }}
             keyboardType="email-address"
             autoCapitalize="none"
@@ -126,9 +159,11 @@ const EmailPasswordScreen: React.FC<Props> = ({ navigation }) => {
             placeholderTextColor="#8E9398"
             secureTextEntry
             value={password}
-            onChangeText={(text) => {
+            onChangeText={text => {
               setPassword(text);
-              if (!passwordTouched) {setPasswordTouched(true);}
+              if (!passwordTouched) {
+                setPasswordTouched(true);
+              }
             }}
           />
           {passwordTouched && passwordError ? (
@@ -144,9 +179,11 @@ const EmailPasswordScreen: React.FC<Props> = ({ navigation }) => {
             placeholderTextColor="#8E9398"
             secureTextEntry
             value={confirmPassword}
-            onChangeText={(text) => {
+            onChangeText={text => {
               setConfirmPassword(text);
-              if (!confirmPasswordTouched) {setConfirmPasswordTouched(true);}
+              if (!confirmPasswordTouched) {
+                setConfirmPasswordTouched(true);
+              }
             }}
           />
           {confirmPasswordTouched && confirmPasswordError ? (
@@ -158,9 +195,15 @@ const EmailPasswordScreen: React.FC<Props> = ({ navigation }) => {
       {!isKeyboardVisible && (
         <TouchableOpacity
           style={[styles.nextButton, isFormValid && styles.nextButtonActive]}
-          onPress={handleSaveToStorage}
+          onPress={handleSaveToStorageAndSignUp}
           disabled={!isFormValid}>
-          <Text style={[styles.nextButtonText, isFormValid && styles.nextButtonTextActive]}>다음</Text>
+          <Text
+            style={[
+              styles.nextButtonText,
+              isFormValid && styles.nextButtonTextActive,
+            ]}>
+            다음
+          </Text>
         </TouchableOpacity>
       )}
     </View>

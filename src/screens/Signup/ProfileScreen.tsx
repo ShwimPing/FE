@@ -1,5 +1,5 @@
 /* eslint-disable react-native/no-inline-styles */
-import React, { useState } from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   View,
   Text,
@@ -9,17 +9,32 @@ import {
   Image,
   Alert,
 } from 'react-native';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import Svg, { Path, G, ClipPath, Rect, Defs } from 'react-native-svg';
-import { RootStackParamList } from '../../App';
+import {NativeStackScreenProps} from '@react-navigation/native-stack';
+import Svg, {Path, G, ClipPath, Rect, Defs} from 'react-native-svg';
+import {launchImageLibrary} from 'react-native-image-picker';
+import {RootStackParamList} from '../../App';
+import messaging from '@react-native-firebase/messaging';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import apiClient from '../../services/apiClient';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Profile'>;
 
-const ProfileScreen: React.FC<Props> = ({ navigation }) => {
+const ProfileScreen: React.FC<Props> = ({navigation}) => {
   const [nickname, setNickname] = useState('');
-  const [isNicknameValid, setIsNicknameValid] = useState(false);
+  const [isNicknameValid, setIsNicknameValid] = useState<boolean | null>(null);
   const [nicknameMessage, setNicknameMessage] = useState('');
+  const [fcmToken, setFcmToken] = useState('');
+  const [profileImage, setProfileImage] = useState<any>(null);
+
+  useEffect(() => {
+    const getFcmToken = async () => {
+      const token = await messaging().getToken();
+      setFcmToken(token);
+      // console.log('FCM Token:', token);
+    };
+
+    getFcmToken();
+  }, []);
 
   const handleCheckNickname = async () => {
     if (nickname.trim() === '') {
@@ -28,15 +43,11 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
     }
 
     try {
-      const response = await fetch(
-        `http://211.188.51.4/auth/nickname/validation?nickname=${encodeURIComponent(
-          nickname,
-        )}`,
-        {
-          method: 'GET',
-        },
+      const response = await apiClient.get(
+        `/auth/nickname/validation?nickname=${encodeURIComponent(nickname)}`,
       );
-      const data = await response.json();
+
+      const data = response.data;
 
       if (data.isSuccess) {
         setIsNicknameValid(true);
@@ -55,46 +66,72 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
     setNickname(text);
     if (text === '') {
       setNicknameMessage('');
-      setIsNicknameValid(false);
+      setIsNicknameValid(null);
     }
   };
 
-  const handleSignUp = async () => {
-    try {
-      const email = await AsyncStorage.getItem('userEmail');
-      const password = await AsyncStorage.getItem('userPassword');
+  const handleImagePick = async () => {
+    const result = await launchImageLibrary({
+      mediaType: 'photo',
+      maxWidth: 300,
+      maxHeight: 300,
+      quality: 0.5,
+    });
 
-      if (!email || !password) {
-        Alert.alert('이메일 또는 비밀번호를 찾을 수 없습니다.');
-        return;
+    if (result.didCancel) {
+      console.log('사용자가 이미지 선택을 취소했습니다.');
+    } else if (result.errorMessage) {
+      console.error('이미지 선택 중 오류:', result.errorMessage);
+    } else if (result.assets && result.assets.length > 0) {
+      const selectedImage = result.assets[0];
+      setProfileImage(selectedImage);
+    }
+  };
+
+  const handleProfileSubmit = async () => {
+    if (!isNicknameValid) {
+      Alert.alert('유효한 닉네임을 입력해 주세요.');
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      const request = {
+        nickname,
+        fcmToken,
+      };
+      formData.append('request', JSON.stringify(request));
+
+      if (profileImage) {
+        const fileExtension = profileImage.fileName
+          ? profileImage.fileName.split('.').pop()
+          : 'jpg';
+
+        formData.append('file', {
+          uri: profileImage.uri,
+          name: `${nickname}.${fileExtension}`,
+          type: profileImage.type || 'image/jpeg',
+        });
       }
 
-      await AsyncStorage.setItem('userNickname', nickname);
-
-
-      const response = await fetch('http://211.188.51.4/auth/signup', {
-        method: 'POST',
+      const response = await apiClient.post('/auth/profile', formData, {
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'multipart/form-data',
         },
-        body: JSON.stringify({
-          email,
-          password,
-          nickname,
-        }),
       });
 
-      const data = await response.json();
+      const data = response.data;
 
       if (data.isSuccess) {
-        // Alert.alert('회원가입이 완료되었습니다.');
-        navigation.navigate('SignUpComplete');
+        await AsyncStorage.setItem('userNickname', nickname);
+        Alert.alert('프로필이 등록되었습니다.');
+        navigation.navigate('ProfileComplete');
       } else {
-        Alert.alert(`회원가입 실패: ${data.message}`);
+        Alert.alert(`프로필 등록 실패: ${data.message}`);
       }
     } catch (error) {
-      console.error('Error during signup:', error);
-      // Alert.alert('회원가입 중 오류가 발생했습니다.');
+      console.error('프로필 등록 중 오류:', error);
+      Alert.alert('프로필 등록 중 오류가 발생했습니다.');
     }
   };
 
@@ -109,32 +146,38 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
 
       <View style={styles.profileImageContainer}>
         <Image
-          source={require('../../../assets/images/profile.png')}
+          source={
+            profileImage
+              ? {uri: profileImage.uri}
+              : require('../../../assets/images/profile.png')
+          }
           style={styles.profileImage}
         />
         <View style={styles.addIconContainer}>
-          <Svg width="25" height="24" viewBox="0 0 25 24" fill="none">
-            <G clipPath="url(#clip0_263_4834)">
-              <Path
-                d="M24.5 12C24.5 5.37258 19.1274 0 12.5 0C5.87258 0 0.5 5.37258 0.5 12C0.5 18.6274 5.87258 24 12.5 24C19.1274 24 24.5 18.6274 24.5 12Z"
-                fill="#222222"
-              />
-              <Path
-                d="M16.5 10.6667H13.8334V8.00002C13.8334 7.64642 13.6929 7.30727 13.4428 7.05719C13.1928 6.80717 12.8536 6.66669 12.5 6.66669C12.1464 6.66669 11.8073 6.80717 11.5572 7.05719C11.3072 7.30727 11.1667 7.64642 11.1667 8.00002L11.214 10.6667H8.50002C8.14642 10.6667 7.80727 10.8072 7.55719 11.0572C7.30717 11.3073 7.16669 11.6464 7.16669 12C7.16669 12.3536 7.30717 12.6928 7.55719 12.9428C7.80727 13.1929 8.14642 13.3334 8.50002 13.3334L11.214 13.286L11.1667 16C11.1667 16.3536 11.3072 16.6928 11.5572 16.9428C11.8073 17.1929 12.1464 17.3334 12.5 17.3334C12.8536 17.3334 13.1928 17.1929 13.4428 16.9428C13.6929 16.6928 13.8334 16.3536 13.8334 16V13.286L16.5 13.3334C16.8536 13.3334 17.1928 13.1929 17.4428 12.9428C17.6929 12.6928 17.8334 12.3536 17.8334 12C17.8334 11.6464 17.6929 11.3073 17.4428 11.0572C17.1928 10.8072 16.8536 10.6667 16.5 10.6667Z"
-                fill="white"
-              />
-            </G>
-            <Defs>
-              <ClipPath id="clip0_263_4834">
-                <Rect
-                  width="24"
-                  height="24"
-                  fill="white"
-                  transform="translate(0.5)"
+          <TouchableOpacity onPress={handleImagePick}>
+            <Svg width="25" height="24" viewBox="0 0 25 24" fill="none">
+              <G clipPath="url(#clip0_263_4834)">
+                <Path
+                  d="M24.5 12C24.5 5.37258 19.1274 0 12.5 0C5.87258 0 0.5 5.37258 0.5 12C0.5 18.6274 5.87258 24 12.5 24C19.1274 24 24.5 18.6274 24.5 12Z"
+                  fill="#222222"
                 />
-              </ClipPath>
-            </Defs>
-          </Svg>
+                <Path
+                  d="M16.5 10.6667H13.8334V8.00002C13.8334 7.64642 13.6929 7.30727 13.4428 7.05719C13.1928 6.80717 12.8536 6.66669 12.5 6.66669C12.1464 6.66669 11.8073 6.80717 11.5572 7.05719C11.3072 7.30727 11.1667 7.64642 11.1667 8.00002L11.214 10.6667H8.50002C8.14642 10.6667 7.80727 10.8072 7.55719 11.0572C7.30717 11.3073 7.16669 11.6464 7.16669 12C7.16669 12.3536 7.30717 12.6928 7.55719 12.9428C7.80727 13.1929 8.14642 13.3334 8.50002 13.3334L11.214 13.286L11.1667 16C11.1667 16.3536 11.3072 16.6928 11.5572 16.9428C11.8073 17.1929 12.1464 17.3334 12.5 17.3334C12.8536 17.3334 13.1928 17.1929 13.4428 16.9428C13.6929 16.6928 13.8334 16.3536 13.8334 16V13.286L16.5 13.3334C16.8536 13.3334 17.1928 13.1929 17.4428 12.9428C17.6929 12.6928 17.8334 12.3536 17.8334 12C17.8334 11.6464 17.6929 11.3073 17.4428 11.0572C17.1928 10.8072 16.8536 10.6667 16.5 10.6667Z"
+                  fill="white"
+                />
+              </G>
+              <Defs>
+                <ClipPath id="clip0_263_4834">
+                  <Rect
+                    width="24"
+                    height="24"
+                    fill="white"
+                    transform="translate(0.5)"
+                  />
+                </ClipPath>
+              </Defs>
+            </Svg>
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -145,8 +188,8 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
             style={[
               styles.nicknameInput,
               {
-                borderColor: isNicknameValid ? '#F8F9FA' : '#FF5252',
-                borderWidth: isNicknameValid ? 0 : 1,
+                borderColor: isNicknameValid === false ? '#FF5252' : '#F8F9FA',
+                borderWidth: isNicknameValid === false ? 1 : 0,
               },
             ]}
             value={nickname}
@@ -177,7 +220,7 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
           <Text
             style={[
               styles.nicknameMessage,
-              { color: isNicknameValid ? '#8E9398' : '#FF5252' },
+              {color: isNicknameValid ? '#8E9398' : '#FF5252'},
             ]}>
             {nicknameMessage}
           </Text>
@@ -186,7 +229,7 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
 
       <TouchableOpacity
         style={[styles.nextButton, isNicknameValid && styles.nextButtonActive]}
-        onPress={handleSignUp}
+        onPress={handleProfileSubmit}
         disabled={!isNicknameValid}>
         <Text
           style={[

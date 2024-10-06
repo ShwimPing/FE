@@ -1,13 +1,29 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import Svg, { Path, Defs, LinearGradient, Stop } from 'react-native-svg';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { RootStackParamList } from '../../App';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'SignUpComplete'>;
+type Props = NativeStackScreenProps<RootStackParamList, 'ProfileComplete'>;
 
 const SignUpCompleteScreen: React.FC<Props> = ({ navigation }) => {
+  const [nickname, setNickname] = useState('');
 
+  useEffect(() => {
+    const fetchNickname = async () => {
+      try {
+        const storedNickname = await AsyncStorage.getItem('userNickname');
+        if (storedNickname) {
+          setNickname(storedNickname);
+        }
+      } catch (error) {
+        console.error('Failed to load nickname:', error);
+      }
+    };
+
+    fetchNickname();
+  }, []);
 
   return (
     <View style={styles.container}>
@@ -38,12 +54,12 @@ const SignUpCompleteScreen: React.FC<Props> = ({ navigation }) => {
       </Svg>
 
       <Text style={styles.message}>
-        회원가입이 완료되었습니다!
+        {nickname} 님,{'\n'}프로필 등록이 완료되었습니다!
       </Text>
 
       <TouchableOpacity
         style={styles.startButton}
-        onPress={() => navigation.navigate('Login')}>
+        onPress={() => navigation.navigate('Home')}>
         <Text style={styles.startButtonText}>시작하기</Text>
       </TouchableOpacity>
     </View>
