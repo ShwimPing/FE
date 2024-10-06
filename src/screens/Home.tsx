@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import React, {useState, useEffect} from 'react';
 import {
   View,
@@ -7,6 +8,8 @@ import {
   Text,
   Modal,
   TouchableWithoutFeedback,
+  ScrollView,
+  Dimensions,
 } from 'react-native';
 import Svg, {Path, G, Defs, ClipPath, Rect} from 'react-native-svg';
 import Footer from '../components/Footer';
@@ -15,9 +18,34 @@ import MapComponent from '../components/MapComponent';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {RootStackParamList} from '../App';
 import Voice from 'react-native-voice';
-
 import {PermissionsAndroid, Platform} from 'react-native';
 import {request, PERMISSIONS, RESULTS} from 'react-native-permissions';
+import Geolocation, {GeoPosition} from 'react-native-geolocation-service';
+
+const requestLocationPermission = async () => {
+  if (Platform.OS === 'android') {
+    try {
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+        {
+          title: '위치 정보 사용 권한 요청',
+          message: '앱에서 위치 정보를 사용하려면 권한이 필요합니다.',
+          buttonNeutral: '나중에',
+          buttonNegative: '취소',
+          buttonPositive: '허용',
+        },
+      );
+      return granted === PermissionsAndroid.RESULTS.GRANTED;
+    } catch (err) {
+      console.warn(err);
+      return false;
+    }
+  } else if (Platform.OS === 'ios') {
+    const result = await request(PERMISSIONS.IOS.LOCATION_WHEN_IN_USE);
+    return result === RESULTS.GRANTED;
+  }
+  return true;
+};
 
 const requestMicrophonePermission = async () => {
   if (Platform.OS === 'android') {
@@ -41,6 +69,7 @@ const requestMicrophonePermission = async () => {
     const result = await request(PERMISSIONS.IOS.MICROPHONE);
     return result === RESULTS.GRANTED;
   }
+  return true;
 };
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Home'>;
@@ -50,6 +79,9 @@ const Home: React.FC = () => {
   const [showVoiceRecognition, setShowVoiceRecognition] = useState(false);
   const [recognizedText, setRecognizedText] = useState<string>('');
   const [isListening, setIsListening] = useState(false);
+  const [longitude, setLongitude] = useState<number | null>(null);
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [placeList, setPlaceList] = useState<any[]>([]);
 
   useEffect(() => {
     Voice.onSpeechStart = () => {
@@ -64,10 +96,12 @@ const Home: React.FC = () => {
       console.error('음성 인식 오류 발생: ', e);
     };
 
-    Voice.onSpeechResults = (event: any) => {
+    Voice.onSpeechResults = async (event: any) => {
       if (event.value) {
+        const recognizedSpeech = event.value[0];
         setRecognizedText(event.value[0]);
-        console.log('인식된 텍스트: ', event.value[0]);
+        console.log('인식된 텍스트: ', recognizedSpeech);
+        await fetchLocationAndSearch(recognizedSpeech);
       }
     };
 
@@ -97,6 +131,120 @@ const Home: React.FC = () => {
       console.error('음성 인식 시작/중지 오류: ', e);
     }
   };
+
+  const categoryColors: {[key: string]: string} = {
+    TOGETHER: '#F3F5F7',
+    SMART: '#E5F9EE',
+    HOT: '#E0F8F7',
+    LIBRARY: '#E0F4FD',
+    COLD: '#E8EAF6',
+  };
+
+  const categoryMapToKorean: {[key: string]: string} = {
+    TOGETHER: '전체',
+    SMART: '기후동행쉼터',
+    HOT: '무더위쉼터',
+    LIBRARY: '도서관쉼터',
+    COLD: '한파쉼터',
+  };
+
+  const fetchLocationAndSearch = async (searchText: string) => {
+    const hasLocationPermission = await requestLocationPermission();
+
+    if (!hasLocationPermission) {
+      console.log('위치 권한이 필요합니다.');
+      return;
+    }
+
+    Geolocation.getCurrentPosition(
+      async (position: GeoPosition) => {
+        const {latitude: currentLatitude, longitude: currentLongitude} =
+          position.coords;
+
+        setLatitude(currentLatitude);
+        setLongitude(currentLongitude);
+
+        console.log('현재 위도:', currentLatitude);
+        console.log('현재 경도:', currentLongitude);
+
+        if (searchText && currentLongitude && currentLatitude) {
+          try {
+            const response = await fetch(
+              `http://211.188.51.4/places/ai-search?message=${encodeURIComponent(
+                searchText,
+              )}&longitude=${currentLongitude}&latitude=${currentLatitude}`,
+            );
+            const data = await response.json();
+            console.log('서버 응답: ', data);
+            if (data.results && data.results.placeList) {
+              setPlaceList(data.results.placeList);
+            }
+          } catch (error) {
+            console.error('요청 중 오류 발생: ', error);
+          }
+        }
+      },
+      (error: any) => {
+        console.error('위치 정보 가져오기 실패: ', error);
+      },
+      {enableHighAccuracy: true, timeout: 20000, maximumAge: 1000},
+    );
+  };
+
+  const renderPlaceList = () => (
+    <View style={styles.placeContainer}>
+      {placeList.length > 0 ? (
+        <>
+          <Text style={styles.searchResultTitle}>검색 결과</Text>
+          <ScrollView>
+            {placeList.map((place, index) => (
+              <TouchableOpacity
+                key={index}
+                style={styles.placeBox}
+                onPress={() => navigation.navigate('SearchDetail', { placeId: place.placeId })}
+              >
+                <View style={styles.nameAndCategory}>
+                  <Text style={styles.placeName}>{place.name}</Text>
+                  <View
+                    style={[
+                      styles.categoryBox,
+                      {
+                        backgroundColor: categoryColors[place.category] || '#F3F5F7',
+                      },
+                    ]}
+                  >
+                    <Text style={styles.categoryBoxText}>
+                      {categoryMapToKorean[place.category] || place.category}
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.placeDetails}>
+                  <Svg width="14" height="12" viewBox="0 0 14 12" fill="none">
+                    <Path
+                      d="M7.00003 10.0496L10.0448 11.8912C10.6024 12.2287 11.2847 11.7298 11.138 11.0988L10.331 7.63582L13.0236 5.3027C13.5151 4.87717 13.251 4.07011 12.6054 4.01875L9.06168 3.71794L7.67502 0.445713C7.42556 -0.148571 6.57449 -0.148571 6.32504 0.445713L4.93837 3.71061L1.39468 4.01142C0.749039 4.06278 0.484913 4.86983 0.976481 5.29536L3.6691 7.62848L2.86205 11.0915C2.71531 11.7224 3.39764 12.2213 3.95524 11.8838L7.00003 10.0496Z"
+                      fill="#FFD643"
+                    />
+                  </Svg>
+                  <Text style={styles.ratingText}>{place.rating} </Text>
+                  <Text style={styles.reviewCountText}>({place.reviewCount})</Text>
+                  <Text
+                    style={styles.placeInfo}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                  >
+                    ・ {place.distance}m・{place.address} | {place.openTime}~{place.closeTime}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </>
+      ) : (
+        <Text>검색 결과가 없습니다.</Text>
+      )}
+    </View>
+  );
+
 
   return (
     <View style={styles.container}>
@@ -159,35 +307,50 @@ const Home: React.FC = () => {
         <TouchableWithoutFeedback
           onPress={() => setShowVoiceRecognition(false)}>
           <View style={styles.overlay}>
-            <View style={styles.voiceRecognitionContainer}>
-              <Text style={styles.voiceRecognitionText}>
-                음성 인식으로 원하는 쉼터를 찾아보세요
-              </Text>
-              <View style={styles.voiceRecognitionInner}>
-                <Text style={styles.voiceRecognitionPrompt}>
-                  "제일 가까운 쉼터 찾아줘"
-                </Text>
-              </View>
-              <TouchableOpacity
-                style={styles.microphoneButton}
-                onPress={startVoiceRecognition}>
-                <Svg width="27" height="37" viewBox="0 0 27 37" fill="none">
-                  <Path
-                    d="M25.1667 15.2918V18.6252C25.1667 25.0685 19.9434 30.2918 13.5 30.2918M1.83337 15.2918V18.6252C1.83337 25.0685 7.05672 30.2918 13.5 30.2918M13.5 30.2918V35.2918M6.83337 35.2918H20.1667M13.5 23.6252C10.7386 23.6252 8.50004 21.3866 8.50004 18.6252V6.9585C8.50004 4.19707 10.7386 1.9585 13.5 1.9585C16.2615 1.9585 18.5 4.19707 18.5 6.9585V18.6252C18.5 21.3866 16.2615 23.6252 13.5 23.6252Z"
-                    stroke="#1A1A1B"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </Svg>
-              </TouchableOpacity>
+            <View
+              style={[
+                styles.voiceRecognitionContainer,
+                // eslint-disable-next-line react-native/no-inline-styles
+                {
+                  height:
+                    placeList.length === 0
+                      ? 297
+                      : Dimensions.get('window').height * 0.8,
+                },
+              ]}>
+              {placeList.length === 0 ? (
+                <>
+                  <Text style={styles.voiceRecognitionText}>
+                    음성 인식으로 원하는 쉼터를 찾아보세요
+                  </Text>
+                  <View style={styles.voiceRecognitionInner}>
+                    <Text style={styles.voiceRecognitionPrompt}>
+                      "제일 가까운 쉼터 찾아줘"
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.microphoneButton}
+                    onPress={startVoiceRecognition}>
+                    <Svg width="27" height="37" viewBox="0 0 27 37" fill="none">
+                      <Path
+                        d="M25.1667 15.2918V18.6252C25.1667 25.0685 19.9434 30.2918 13.5 30.2918M1.83337 15.2918V18.6252C1.83337 25.0685 7.05672 30.2918 13.5 30.2918M13.5 30.2918V35.2918M6.83337 35.2918H20.1667M13.5 23.6252C10.7386 23.6252 8.50004 21.3866 8.50004 18.6252V6.9585C8.50004 4.19707 10.7386 1.9585 13.5 1.9585C16.2615 1.9585 18.5 4.19707 18.5 6.9585V18.6252C18.5 21.3866 16.2615 23.6252 13.5 23.6252Z"
+                        stroke="#1A1A1B"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </Svg>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                renderPlaceList()
+              )}
             </View>
           </View>
         </TouchableWithoutFeedback>
       </Modal>
 
       <MapComponent />
-
       <Footer />
     </View>
   );
@@ -230,9 +393,9 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   voiceRecognitionContainer: {
-    height: 300,
-    paddingVertical: 51,
-    paddingHorizontal: 40,
+    height: Dimensions.get('window').height * 0.8,
+    paddingVertical: 20,
+    paddingHorizontal: 16,
     backgroundColor: '#fff',
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
@@ -244,7 +407,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontFamily: 'Pretendard-Bold',
     fontSize: 18,
-    fontStyle: 'normal',
     fontWeight: '600',
     lineHeight: 27,
     marginBottom: 24,
@@ -265,7 +427,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontFamily: 'Pretendard-Regular',
     fontSize: 16,
-    fontStyle: 'normal',
     lineHeight: 24,
     color: '#505458',
   },
@@ -277,6 +438,72 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 50,
     backgroundColor: '#F1F1F1',
+  },
+  placeContainer: {
+    backgroundColor: '#fff',
+    height: '100%',
+    width: '100%',
+  },
+  searchResultTitle: {
+    color: '#1A1A1B',
+    textAlign: 'center',
+    fontFamily: 'Pretendard-Bold',
+    fontSize: 16,
+    fontWeight: '600',
+    lineHeight: 24,
+    marginBottom: 12,
+  },
+  placeBox: {
+    display: 'flex',
+    padding: 18,
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    gap: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+    alignSelf: 'stretch',
+  },
+  nameAndCategory: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'stretch',
+    gap: 10,
+  },
+  placeName: {
+    color: '#000',
+    fontFamily: 'Pretendard-Bold',
+    fontSize: 14,
+    lineHeight: 21,
+  },
+  categoryBox: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 2,
+  },
+  categoryBoxText: {
+    fontSize: 12,
+    color: '#1A1A1B',
+    fontFamily: 'Pretendard-Regular',
+  },
+  placeDetails: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  ratingText: {
+    fontSize: 12,
+    color: '#1A1A1B',
+    fontFamily: 'Pretendard-Regular',
+  },
+  reviewCountText: {
+    fontSize: 12,
+    fontFamily: 'Pretendard-Regular',
+    color: '#8E9398',
+  },
+  placeInfo: {
+    fontSize: 12,
+    fontFamily: 'Pretendard-Bold',
+    color: '#505458',
   },
 });
 

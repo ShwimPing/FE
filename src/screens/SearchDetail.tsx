@@ -79,6 +79,8 @@ const SearchDetail: React.FC = () => {
           );
 
           const {placeDetail, recentReviews} = response.data.results;
+          console.log('placeDetail.isBookmarked:', placeDetail.isBookmarked);
+
 
           setPlaceDetail(placeDetail);
           setReviews(recentReviews);
@@ -96,7 +98,7 @@ const SearchDetail: React.FC = () => {
 
   const toggleBookmark = async () => {
     const authToken = await AsyncStorage.getItem('accessToken');
-    console.log(authToken);
+    // console.log(authToken);
     if (!authToken) {
       setIsModalVisible(true);
       return;

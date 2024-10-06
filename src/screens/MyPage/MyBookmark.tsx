@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState, useCallback} from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   SafeAreaView,
   Alert,
 } from 'react-native';
+import {useFocusEffect} from '@react-navigation/native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Svg, {Path} from 'react-native-svg';
@@ -66,7 +67,7 @@ const MyBookmark = () => {
 
       if (response.data && response.data.isSuccess && response.data.results) {
         const newBookmarks = response.data.results.bookMarkList;
-
+        // console.log(newBookmarks);
 
         if (isRefreshing) {
           setBookmarks(newBookmarks);
@@ -91,9 +92,11 @@ const MyBookmark = () => {
     }
   };
 
-  useEffect(() => {
-    fetchBookmarks(0, true);
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchBookmarks(0, true);
+    }, []),
+  );
 
   const handleLoadMore = () => {
     if (!isLoadingMore && hasNext && lastBookmarkId !== null) {
