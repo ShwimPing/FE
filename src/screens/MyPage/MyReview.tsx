@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, ActivityIndicator, Alert, TouchableOpacity } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
-import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import apiClient from '../../services/apiClient';
 
 interface Review {
   reviewId: number;
@@ -21,15 +20,8 @@ const MyReview: React.FC = () => {
   const fetchReviews = async () => {
     try {
       setLoading(true);
-      const token = await AsyncStorage.getItem('accessToken');
-      if (!token) {
-        throw new Error('토큰을 찾을 수 없습니다.');
-      }
 
-      const response = await axios.get('http://211.188.51.4/mypage/review', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+      const response = await apiClient.get('/mypage/review', {
         params: {
           lastReviewId: 0,
         },
@@ -50,16 +42,7 @@ const MyReview: React.FC = () => {
 
   const deleteReview = async (reviewId: number) => {
     try {
-      const token = await AsyncStorage.getItem('authToken');
-      if (!token) {
-        throw new Error('토큰을 찾을 수 없습니다.');
-      }
-
-      await axios.delete(`http://211.188.51.4/reviews/${reviewId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      await apiClient.delete(`/reviews/${reviewId}`);
 
       setReviews((prevReviews) => prevReviews.filter((review) => review.reviewId !== reviewId));
       Alert.alert('성공', '리뷰가 삭제되었습니다.');

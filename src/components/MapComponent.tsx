@@ -1,4 +1,3 @@
-/* eslint-disable react-native/no-inline-styles */
 import React, {useRef, useEffect, useState, useCallback} from 'react';
 import {
   View,
@@ -32,11 +31,12 @@ const initialCamera = {
 };
 
 const categories = [
-  {label: '전체', value: 'TOGETHER'},
+  {label: '전체', value: ''},
   {label: '무더위쉼터', value: 'HOT'},
   {label: '한파쉼터', value: 'COLD'},
   {label: '도서관쉼터', value: 'LIBRARY'},
   {label: '스마트쉼터', value: 'SMART'},
+  {label: '기후동행쉼터', value: 'TOGETHER'},
 ];
 
 const MapComponent = () => {
@@ -50,7 +50,7 @@ const MapComponent = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('TOGETHER');
   const [district, setDistrict] = useState<string>('');
   const [markers, setMarkers] = useState<
-    {latitude: number; longitude: number; placeId: number}[]
+    {latitude: number; longitude: number; placeId: number; category: string}[]
   >([]);
 
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
@@ -75,7 +75,6 @@ const MapComponent = () => {
     return true;
   }, []);
 
-  // 구 정보
   const fetchDistrictName = useCallback(
     async (latitude: number, longitude: number) => {
       try {
@@ -111,7 +110,7 @@ const MapComponent = () => {
     [selectedCategory],
   );
 
-  // 카테고리별 주변 장소
+  // 카테고리별 주변 장소를 가져오는 함수
   const fetchNearbyPlaces = async (
     latitude: number,
     longitude: number,
@@ -119,35 +118,75 @@ const MapComponent = () => {
     category: string,
   ) => {
     try {
-      const response = await axios.get('http://211.188.51.4/places/nearby', {
-        params: {
-          longitude,
-          latitude,
-          radius: 1000,
-          category,
-          region,
-        },
-      });
+      // 전체 카테고리가 선택되었을 경우
+      if (category === '') {
+        const allCategories = ['HOT', 'COLD', 'LIBRARY', 'SMART', 'TOGETHER']; // 모든 카테고리
+        let allMarkers: any[] = [];
 
-      // console.log('API 응답:', response.data);
-
-      if (response.data.isSuccess) {
-        const places = response.data.results.placeList || [];
-
-        if (Array.isArray(places)) {
-          setMarkers(
-            places.map((place: any) => ({
-              latitude: place.latitude,
-              longitude: place.longitude,
-              placeId: place.placeId,
-            })),
+        // 각 카테고리의 데이터를 비동기적으로 모두 가져옴
+        for (let cat of allCategories) {
+          const response = await axios.get(
+            'http://211.188.51.4/places/nearby',
+            {
+              params: {
+                longitude,
+                latitude,
+                radius: 1000,
+                category: cat,
+                region,
+              },
+            },
           );
-        } else {
-          console.warn('Unexpected format: results.placeList is not an array.');
-          setMarkers([]);
+
+          if (response.data.isSuccess) {
+            const places = response.data.results.placeList || [];
+            allMarkers = [
+              ...allMarkers,
+              ...places.map((place: any) => ({
+                latitude: place.latitude,
+                longitude: place.longitude,
+                placeId: place.placeId,
+                category: cat, // 카테고리 정보 포함
+              })),
+            ];
+          }
         }
+
+        // 모든 카테고리의 마커를 통합하여 설정
+        setMarkers(allMarkers);
       } else {
-        console.warn('데이터 가져오기 실패:', response.data.message);
+        // 선택된 특정 카테고리의 데이터를 가져옴
+        const response = await axios.get('http://211.188.51.4/places/nearby', {
+          params: {
+            longitude,
+            latitude,
+            radius: 1000,
+            category,
+            region,
+          },
+        });
+
+        if (response.data.isSuccess) {
+          const places = response.data.results.placeList || [];
+
+          if (Array.isArray(places)) {
+            setMarkers(
+              places.map((place: any) => ({
+                latitude: place.latitude,
+                longitude: place.longitude,
+                placeId: place.placeId,
+                category, // 선택된 카테고리 설정
+              })),
+            );
+          } else {
+            console.warn(
+              'Unexpected format: results.placeList is not an array.',
+            );
+            setMarkers([]);
+          }
+        } else {
+          console.warn('데이터 가져오기 실패:', response.data.message);
+        }
       }
     } catch (error) {
       console.error('장소 정보 가져오기 실패:', error);
@@ -292,6 +331,23 @@ const MapComponent = () => {
     [district, selectedCategory],
   );
 
+  const getMarkerImage = (category: string) => {
+    switch (category) {
+      case 'HOT':
+        return require('../../assets/images/hot.png');
+      case 'COLD':
+        return require('../../assets/images/cold.png');
+      case 'LIBRARY':
+        return require('../../assets/images/library.png');
+      case 'SMART':
+        return require('../../assets/images/smart.png');
+      case 'TOGETHER':
+        return require('../../assets/images/climate.png');
+      default:
+        return null;
+    }
+  };
+
   return (
     <View style={styles.container}>
       {/* @ts-ignore: children 속성 오류 무시 */}
@@ -315,7 +371,9 @@ const MapComponent = () => {
           <Marker
             key={index}
             coordinate={marker}
-            pinColor="green"
+            image={getMarkerImage(marker.category)} // 마커 이미지 적용
+            width={36} // 마커 이미지 가로 크기
+            height={36} // 마커 이미지 세로 크기
             onClick={() => handleMarkerClick(marker.placeId)} // placeId 전달
           />
         ))}
@@ -349,6 +407,7 @@ const MapComponent = () => {
             <View
               style={[
                 styles.circle,
+                // eslint-disable-next-line react-native/no-inline-styles
                 {
                   marginLeft: index === 0 ? 16 : 6,
                   borderColor:
