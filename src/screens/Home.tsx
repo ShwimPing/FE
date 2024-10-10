@@ -90,10 +90,12 @@ const Home: React.FC = () => {
 
     Voice.onSpeechEnd = () => {
       console.log('음성 인식이 종료되었습니다.');
+      setIsListening(false);
     };
 
     Voice.onSpeechError = e => {
       console.error('음성 인식 오류 발생: ', e);
+      setIsListening(false);
     };
 
     Voice.onSpeechResults = async (event: any) => {
@@ -132,17 +134,26 @@ const Home: React.FC = () => {
     }
   };
 
+  const closeVoiceRecognitionModal = () => {
+    setShowVoiceRecognition(false);
+    setPlaceList([]);
+    if (isListening) {
+      Voice.stop();
+      setIsListening(false);
+    }
+  };
+
   const categoryColors: {[key: string]: string} = {
-    TOGETHER: '#F3F5F7',
-    SMART: '#E5F9EE',
+    TOGETHER: '#E5F9EE',
+    SMART: '#FDE6F4',
     HOT: '#E0F8F7',
     LIBRARY: '#E0F4FD',
     COLD: '#E8EAF6',
   };
 
   const categoryMapToKorean: {[key: string]: string} = {
-    TOGETHER: '전체',
-    SMART: '기후동행쉼터',
+    TOGETHER: '기후동행쉼터',
+    SMART: '스마트쉼터',
     HOT: '무더위쉼터',
     LIBRARY: '도서관쉼터',
     COLD: '한파쉼터',
@@ -201,18 +212,19 @@ const Home: React.FC = () => {
               <TouchableOpacity
                 key={index}
                 style={styles.placeBox}
-                onPress={() => navigation.navigate('SearchDetail', { placeId: place.placeId })}
-              >
+                onPress={() =>
+                  navigation.navigate('SearchDetail', {placeId: place.placeId})
+                }>
                 <View style={styles.nameAndCategory}>
                   <Text style={styles.placeName}>{place.name}</Text>
                   <View
                     style={[
                       styles.categoryBox,
                       {
-                        backgroundColor: categoryColors[place.category] || '#F3F5F7',
+                        backgroundColor:
+                          categoryColors[place.category] || '#F3F5F7',
                       },
-                    ]}
-                  >
+                    ]}>
                     <Text style={styles.categoryBoxText}>
                       {categoryMapToKorean[place.category] || place.category}
                     </Text>
@@ -226,13 +238,15 @@ const Home: React.FC = () => {
                     />
                   </Svg>
                   <Text style={styles.ratingText}>{place.rating} </Text>
-                  <Text style={styles.reviewCountText}>({place.reviewCount})</Text>
+                  <Text style={styles.reviewCountText}>
+                    ({place.reviewCount})
+                  </Text>
                   <Text
                     style={styles.placeInfo}
                     numberOfLines={1}
-                    ellipsizeMode="tail"
-                  >
-                    ・ {place.distance}m・{place.address} | {place.openTime}~{place.closeTime}
+                    ellipsizeMode="tail">
+                    ・ {place.distance}m・{place.address} | {place.openTime}~
+                    {place.closeTime}
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -244,7 +258,6 @@ const Home: React.FC = () => {
       )}
     </View>
   );
-
 
   return (
     <View style={styles.container}>
@@ -303,9 +316,8 @@ const Home: React.FC = () => {
         transparent={true}
         visible={showVoiceRecognition}
         animationType="slide"
-        onRequestClose={() => setShowVoiceRecognition(false)}>
-        <TouchableWithoutFeedback
-          onPress={() => setShowVoiceRecognition(false)}>
+        onRequestClose={closeVoiceRecognitionModal}>
+        <TouchableWithoutFeedback onPress={closeVoiceRecognitionModal}>
           <View style={styles.overlay}>
             <View
               style={[
