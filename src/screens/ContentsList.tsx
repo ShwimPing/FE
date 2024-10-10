@@ -63,6 +63,12 @@ const ContentsList: React.FC<Props> = ({ navigation }) => {
         >
           <Text style={[styles.tabText, selectedTab === 'COLD' && styles.activeTabText]}>한파</Text>
         </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, selectedTab === 'OTHER' && styles.activeTab]}
+          onPress={() => setSelectedTab('OTHER')}
+        >
+          <Text style={[styles.tabText, selectedTab === 'OTHER' && styles.activeTabText]}>기타</Text>
+        </TouchableOpacity>
       </View>
       {loading ? (
         <Text style={styles.loadingText}>Loading...</Text>
@@ -91,7 +97,7 @@ const styles = StyleSheet.create({
     marginVertical: 10,
   },
   tab: {
-    width: 187.5,
+    width: 125,
     height: 48,
     justifyContent: 'center',
     alignItems: 'center',

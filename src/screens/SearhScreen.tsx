@@ -31,23 +31,24 @@ const SearchScreen: React.FC<Props> = ({navigation}) => {
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
 
   const categoryMap: {[key: string]: string} = {
-    전체: 'TOGETHER',
-    기후동행쉼터: 'SMART',
+    전체: '',
     무더위쉼터: 'HOT',
-    도서관쉼터: 'LIBRARY',
     한파쉼터: 'COLD',
+    도서관쉼터: 'LIBRARY',
+    스마트쉼터: 'SMART',
+    기후동행쉼터: 'TOGETHER',
   };
 
   const categoryMapToKorean: {[key: string]: string} = {
-    TOGETHER: '전체',
-    SMART: '기후동행쉼터',
+    TOGETHER: '기후동행쉼터',
+    SMART: '스마트쉼터',
     HOT: '무더위쉼터',
     LIBRARY: '도서관쉼터',
     COLD: '한파쉼터',
   };
 
   const categoryColors: {[key: string]: string} = {
-    전체: '#F3F5F7',
+    //전체: '#F3F5F7',
     기후동행쉼터: '#E5F9EE',
     무더위쉼터: '#E0F8F7',
     도서관쉼터: '#E0F4FD',
@@ -62,7 +63,7 @@ const SearchScreen: React.FC<Props> = ({navigation}) => {
     }
 
     try {
-      const category = categoryMap[selectedCategory];
+      const category = selectedCategory === '전체' ? Object.values(categoryMap).filter(Boolean).join(',') : categoryMap[selectedCategory];
 
       const response = await axios.get('http://211.188.51.4/places/search', {
         params: {
@@ -358,7 +359,7 @@ const SearchScreen: React.FC<Props> = ({navigation}) => {
                 <Text style={styles.resultDetails}>
                   {`${item.distance || 'N/A'}m · ${
                     item.address || '주소 없음'
-                  } | ${item.hours || '운영시간 없음'}`}
+                  } | ${item.openTime}~${item.closeTime}`}
                 </Text>
               </View>
             </TouchableOpacity>

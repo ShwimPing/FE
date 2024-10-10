@@ -202,8 +202,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 2,
     borderRadius: 2,
+    textAlign: 'center',
   },
   categoryText: {
     fontSize: 12,

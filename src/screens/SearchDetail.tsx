@@ -19,16 +19,16 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import LoginRequiredModal from '../components/LoginRequiredModal';
 
 const categoryColors: {[key: string]: string} = {
-  TOGETHER: '#F3F5F7',
-  SMART: '#E5F9EE',
+  TOGETHER: '#E5F9EE',
+  SMART: '#FDE6F4',
   HOT: '#E0F8F7',
   LIBRARY: '#E0F4FD',
   COLD: '#E8EAF6',
 };
 
 const categoryMapToKorean: {[key: string]: string} = {
-  TOGETHER: '전체',
-  SMART: '기후동행쉼터',
+  TOGETHER: '기후동행쉼터',
+  SMART: '스마트쉼터',
   HOT: '무더위쉼터',
   LIBRARY: '도서관쉼터',
   COLD: '한파쉼터',
