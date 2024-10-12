@@ -1,16 +1,42 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, ActivityIndicator, Alert, TouchableOpacity } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import React, {useEffect, useState} from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Image,
+  ActivityIndicator,
+  Alert,
+  TouchableOpacity,
+} from 'react-native';
+import Svg, {Path} from 'react-native-svg';
 import apiClient from '../../services/apiClient';
 
 interface Review {
   reviewId: number;
-  writer: string;
+  category: string;
+  name: string;
   rating: number;
   content: string;
   reviewImageUrl: string | null;
   date: string;
 }
+
+const categoryColors: {[key: string]: string} = {
+  TOGETHER: '#E5F9EE',
+  SMART: '#FDE6F4',
+  HOT: '#E0F8F7',
+  LIBRARY: '#E0F4FD',
+  COLD: '#E8EAF6',
+};
+
+const categoryMapToKorean: {[key: string]: string} = {
+  TOGETHER: '기후동행쉼터',
+  SMART: '스마트쉼터',
+  HOT: '무더위쉼터',
+  LIBRARY: '도서관쉼터',
+  COLD: '한파쉼터',
+};
 
 const MyReview: React.FC = () => {
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -20,21 +46,17 @@ const MyReview: React.FC = () => {
   const fetchReviews = async () => {
     try {
       setLoading(true);
-
       const response = await apiClient.get('/mypage/review', {
-        params: {
-          lastReviewId: 0,
-        },
+        params: {lastReviewId: 0},
       });
-
-      const newReviews = response.data?.results?.reviewSimpleResponseList || [];
+      const newReviews = response.data.results.myReviewResponsesList || [];
       setReviews(newReviews);
     } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message || '리뷰를 불러오는 중 오류가 발생했습니다.');
-      } else {
-        setError('리뷰를 불러오는 중 알 수 없는 오류가 발생했습니다.');
-      }
+      setError(
+        err instanceof Error
+          ? err.message
+          : '리뷰를 불러오는 중 오류가 발생했습니다.',
+      );
     } finally {
       setLoading(false);
     }
@@ -43,15 +65,17 @@ const MyReview: React.FC = () => {
   const deleteReview = async (reviewId: number) => {
     try {
       await apiClient.delete(`/reviews/${reviewId}`);
-
-      setReviews((prevReviews) => prevReviews.filter((review) => review.reviewId !== reviewId));
+      setReviews(prevReviews =>
+        prevReviews.filter(review => review.reviewId !== reviewId),
+      );
       Alert.alert('성공', '리뷰가 삭제되었습니다.');
     } catch (err) {
-      if (err instanceof Error) {
-        Alert.alert('오류', err.message || '리뷰 삭제 중 오류가 발생했습니다.');
-      } else {
-        Alert.alert('오류', '리뷰 삭제 중 알 수 없는 오류가 발생했습니다.');
-      }
+      Alert.alert(
+        '오류',
+        err instanceof Error
+          ? err.message
+          : '리뷰 삭제 중 오류가 발생했습니다.',
+      );
     }
   };
 
@@ -62,7 +86,6 @@ const MyReview: React.FC = () => {
   const renderStars = (rating: number) => {
     const filledStars = Math.floor(rating);
     const emptyStars = 5 - filledStars;
-
     return (
       <View style={styles.starContainer}>
         {[...Array(filledStars)].map((_, index) => (
@@ -96,7 +119,11 @@ const MyReview: React.FC = () => {
   };
 
   return (
-    <ScrollView contentContainerStyle={reviews.length === 0 ? styles.emptyContainer : null} style={styles.container}>
+    <ScrollView
+      contentContainerStyle={
+        reviews.length === 0 ? styles.emptyContainer : null
+      }
+      style={styles.container}>
       {loading ? (
         <ActivityIndicator size="large" color="#0000ff" />
       ) : error ? (
@@ -104,33 +131,42 @@ const MyReview: React.FC = () => {
       ) : reviews.length === 0 ? (
         <Text style={styles.noReviewsText}>아직 작성한 리뷰가 없어요</Text>
       ) : (
-        reviews.map((review) => (
+        reviews.map(review => (
           <View key={review.reviewId} style={styles.reviewContainer}>
-            <View style={styles.rowContainer}>
-              <Image
-                source={require('../../../assets/images/profile.png')}
-                style={styles.profileImage}
-              />
-
-              <View style={styles.infoContainer}>
-                <View style={styles.nameAndDateContainer}>
-                  <Text style={styles.userName}>{review.writer}</Text>
-                  <Text style={styles.reviewDate}>{review.date}</Text>
-                </View>
-
-                <View style={styles.starsAndDeleteContainer}>
-                  {renderStars(review.rating)}
-                  <TouchableOpacity onPress={() => deleteReview(review.reviewId)}>
-                    <Text style={styles.deleteButton}>삭제</Text>
-                  </TouchableOpacity>
-                </View>
+            <View style={styles.headerRow}>
+              <View
+                style={[
+                  styles.categoryBox,
+                  {
+                    backgroundColor:
+                      categoryColors[review.category] || '#F3F5F7',
+                  },
+                ]}>
+                <Text style={styles.categoryBoxText}>
+                  {categoryMapToKorean[review.category] || review.category}
+                </Text>
               </View>
+              <Text style={styles.reviewDate}>{review.date}</Text>
+            </View>
+
+            <View style={styles.placeAndDeleteRow}>
+              <Text style={styles.placeName}>{review.name}</Text>
+              <TouchableOpacity onPress={() => deleteReview(review.reviewId)}>
+                <Text style={styles.deleteButton}>삭제</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.starsAndDeleteContainer}>
+              {renderStars(review.rating)}
             </View>
 
             <Text style={styles.reviewContent}>{review.content}</Text>
 
             {review.reviewImageUrl && review.reviewImageUrl.trim() !== '' ? (
-              <Image source={{ uri: review.reviewImageUrl }} style={styles.reviewImage} />
+              <Image
+                source={{uri: review.reviewImageUrl}}
+                style={styles.reviewImage}
+              />
             ) : null}
           </View>
         ))
@@ -152,75 +188,82 @@ const styles = StyleSheet.create({
   },
   noReviewsText: {
     fontSize: 16,
-    fontFamily: 'Pretendard-Bold',
+    fontWeight: 'bold',
     color: '#000',
   },
   errorText: {
     fontSize: 16,
-    fontFamily: 'Pretendard-Bold',
     color: 'red',
   },
   reviewContainer: {
     marginBottom: 24,
   },
-  rowContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  profileImage: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 7,
-  },
-  infoContainer: {
-    flex: 1,
-  },
-  nameAndDateContainer: {
+  headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 4,
   },
-  userName: {
-    fontSize: 12,
-    fontFamily: 'Pretendard-Bold',
-    color: '#505458',
+  placeAndDeleteRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  infoContainer: {
+    flex: 1,
+  },
+  placeName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
   },
   reviewDate: {
     color: '#565656',
     fontFamily: 'Pretendard',
     fontSize: 12,
-    fontWeight: '400',
+    lineHeight: 18,
+  },
+  deleteButton: {
+    color: '#8E9398',
+    fontFamily: 'Pretendard',
+    fontSize: 12,
+    textAlign: 'right',
+    lineHeight: 18,
+    textDecorationLine: 'underline',
   },
   starsAndDeleteContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    marginVertical: 8,
+  },
+  reviewContent: {
+    fontSize: 14,
+    fontFamily: 'Pretendard-Regular',
+    color: '#000',
+    lineHeight: 21,
     marginBottom: 7,
+  },
+  reviewImage: {
+    width: '100%',
+    height: 200,
+    borderRadius: 7,
+    marginTop: 8,
+    backgroundColor: '#E8E8E8',
   },
   starContainer: {
     flexDirection: 'row',
   },
-  deleteButton: {
-    color: '#565656',
-    fontFamily: 'Pretendard',
+  categoryBox: {
+    paddingHorizontal: 12,
+    paddingVertical: 2,
+    borderRadius: 2,
+    alignSelf: 'flex-start',
+  },
+  categoryBoxText: {
     fontSize: 12,
-    lineHeight: 18,
-    borderBottomColor: '#222',
-    borderBottomWidth: 1,
-  },
-  reviewContent: {
-    fontSize: 14,
-    color: '#666',
     fontFamily: 'Pretendard-Regular',
-    lineHeight: 21,
-  },
-  reviewImage: {
-    height: 342,
-    borderRadius: 7,
-    marginTop: 8,
+    color: '#1A1A1B',
   },
 });
 
