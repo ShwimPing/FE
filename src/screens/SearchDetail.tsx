@@ -81,7 +81,6 @@ const SearchDetail: React.FC = () => {
           const {placeDetail, recentReviews} = response.data.results;
           console.log('placeDetail.isBookmarked:', placeDetail.isBookmarked);
 
-
           setPlaceDetail(placeDetail);
           setReviews(recentReviews);
           setIsBookmarked(placeDetail.isBookmarked);
@@ -113,7 +112,6 @@ const SearchDetail: React.FC = () => {
           },
         },
       );
-
 
       if (response.data.isSuccess) {
         if (response.data.results === '북마크 저장 성공') {
@@ -287,7 +285,12 @@ const SearchDetail: React.FC = () => {
                 <View style={styles.reviewHeader}>
                   <View style={styles.reviewUser}>
                     <Image
-                      source={require('../../assets/images/profile.png')}
+                      source={
+                        review.reviewImageUrl &&
+                        review.reviewImageUrl.trim() !== ''
+                          ? {uri: review.reviewImageUrl}
+                          : require('../../assets/images/profile.png')
+                      }
                       style={styles.profileImage}
                     />
                     <View>

@@ -65,9 +65,12 @@ const MyBookmark = () => {
         headers: {Authorization: `Bearer ${token}`},
       });
 
+      console.log('Response:', response.data);
+
+
       if (response.data && response.data.isSuccess && response.data.results) {
         const newBookmarks = response.data.results.bookMarkList;
-        // console.log(newBookmarks);
+        console.log(newBookmarks);
 
         if (isRefreshing) {
           setBookmarks(newBookmarks);
