@@ -13,6 +13,7 @@ import {
   Modal,
   TouchableWithoutFeedback,
 } from 'react-native';
+import Geolocation from 'react-native-geolocation-service';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {RootStackParamList} from '../App';
 import Svg, {Path, G, Defs, ClipPath, Rect} from 'react-native-svg';
@@ -27,8 +28,12 @@ const SearchScreen: React.FC<Props> = ({navigation}) => {
   const [searchActive, setSearchActive] = useState(false);
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState('별점순');
+  const [distanceModalVisible, setDistanceModalVisible] = useState(false);
+  const [maxDistance, setMaxDistance] = useState(10000);
+  const [selectedDistance, setSelectedDistance] = useState('최대 거리');
   const [isFilterPressed, setIsFilterPressed] = useState<string | null>(null);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const [location, setLocation] = useState<{latitude: number; longitude: number} | null>(null);
 
   const categoryMap: {[key: string]: string} = {
     전체: '',
@@ -48,7 +53,6 @@ const SearchScreen: React.FC<Props> = ({navigation}) => {
   };
 
   const categoryColors: {[key: string]: string} = {
-    //전체: '#F3F5F7',
     기후동행쉼터: '#E5F9EE',
     무더위쉼터: '#E0F8F7',
     도서관쉼터: '#E0F4FD',
@@ -56,20 +60,38 @@ const SearchScreen: React.FC<Props> = ({navigation}) => {
     한파쉼터: '#E8EAF6',
   };
 
+  useEffect(() => {
+    Geolocation.getCurrentPosition(
+      position => {
+        const {latitude, longitude} = position.coords;
+        setLocation({latitude, longitude});
+      },
+      error => {
+        console.error('위치 정보를 가져올 수 없습니다:', error);
+      },
+      {enableHighAccuracy: true, timeout: 15000, maximumAge: 10000},
+    );
+
+  }, []);
+
   const handleSearch = useCallback(async () => {
-    if (searchQuery.trim() === '') {
+    if (searchQuery.trim() === '' || !location) {
       setSearchActive(false);
       return;
     }
 
     try {
-      const category = selectedCategory === '전체' ? Object.values(categoryMap).filter(Boolean).join(',') : categoryMap[selectedCategory];
+      const category =
+        selectedCategory === '전체'
+          ? Object.values(categoryMap).filter(Boolean).join(',')
+          : categoryMap[selectedCategory];
+        // console.log(location.longitude, location.latitude);
 
       const response = await axios.get('http://211.188.51.4/places/search', {
         params: {
-          longitude: 127.0965824,
-          latitude: 37.47153792,
-          maxDistance: 100000,
+          longitude: location.longitude,
+          latitude: location.latitude,
+          maxDistance: maxDistance,
           category,
           sortType: selectedFilter === '별점순' ? 'STAR_DESC' : 'DISTANCE_ASC',
           page: 0,
@@ -77,7 +99,6 @@ const SearchScreen: React.FC<Props> = ({navigation}) => {
         },
       });
 
-      console.log('API 응답 데이터:', response.data);
 
       setFilteredResults(response.data.results.placeList);
       setSearchActive(true);
@@ -114,9 +135,19 @@ const SearchScreen: React.FC<Props> = ({navigation}) => {
     setFilterModalVisible(!filterModalVisible);
   };
 
+  const toggleDistanceModal = () => {
+    setDistanceModalVisible(!distanceModalVisible);
+  };
+
   const handleFilterSelect = (filter: string) => {
     setSelectedFilter(filter);
     toggleFilterModal();
+  };
+
+  const handleDistanceSelect = (distance: string, value: number) => {
+    setSelectedDistance(distance);
+    setMaxDistance(value);
+    toggleDistanceModal();
   };
 
   return (
@@ -181,6 +212,25 @@ const SearchScreen: React.FC<Props> = ({navigation}) => {
           <View style={styles.filterWrapper}>
             <TouchableOpacity
               style={styles.filterButton}
+              onPress={toggleDistanceModal}>
+              <Text style={styles.filterButtonText}>{selectedDistance}</Text>
+              <Svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                style={styles.filterIcon}>
+                <Path
+                  d="M6 9L12 15L18 9"
+                  stroke="#505458"
+                  strokeWidth="1.3"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </Svg>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.filterButton, styles.filterButtonMargin]}
               onPress={toggleFilterModal}>
               <Text style={styles.filterButtonText}>{selectedFilter}</Text>
               <Svg
@@ -199,6 +249,42 @@ const SearchScreen: React.FC<Props> = ({navigation}) => {
               </Svg>
             </TouchableOpacity>
           </View>
+
+          <Modal
+            visible={distanceModalVisible}
+            transparent={true}
+            animationType="slide"
+            onRequestClose={toggleDistanceModal}>
+            <TouchableWithoutFeedback onPress={toggleDistanceModal}>
+              <View style={styles.modalOverlay}>
+                <View style={styles.filterModal}>
+                  <Text style={styles.filterModalTitle}>최대 거리</Text>
+                  <ScrollView>
+                    <TouchableOpacity
+                      style={styles.filterOption}
+                      onPress={() => handleDistanceSelect('10km', 10000)}>
+                      <Text style={styles.filterOptionText}>10km</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.filterOption}
+                      onPress={() => handleDistanceSelect('30km', 30000)}>
+                      <Text style={styles.filterOptionText}>30km</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.filterOption}
+                      onPress={() => handleDistanceSelect('50km', 50000)}>
+                      <Text style={styles.filterOptionText}>50km</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.filterOption}
+                      onPress={() => handleDistanceSelect('100km', 100000)}>
+                      <Text style={styles.filterOptionText}>100km</Text>
+                    </TouchableOpacity>
+                  </ScrollView>
+                </View>
+              </View>
+            </TouchableWithoutFeedback>
+          </Modal>
 
           <Modal
             visible={filterModalVisible}
@@ -299,7 +385,7 @@ const SearchScreen: React.FC<Props> = ({navigation}) => {
                         />
                       </G>
                       <Defs>
-                        <ClipPath id="clip0_323_1064">
+                        <ClipPath id="clip0_323_1064)">
                           <Rect
                             width="12"
                             height="12"
@@ -349,7 +435,7 @@ const SearchScreen: React.FC<Props> = ({navigation}) => {
                     />
                   </Svg>
                   <Text style={styles.ratingText}>
-                    {item.rating?.toFixed(1) || 'N/A'}
+                    {item.rating?.toFixed(1) || '0'}
                   </Text>
                   <Text style={styles.reviewCount}>
                     ({item.reviewCount || 0})
@@ -357,9 +443,11 @@ const SearchScreen: React.FC<Props> = ({navigation}) => {
                 </View>
 
                 <Text style={styles.resultDetails}>
-                  {`${item.distance || 'N/A'}m · ${
-                    item.address || '주소 없음'
-                  } | ${item.openTime}~${item.closeTime}`}
+                  {`${
+                    item.distance ? `${item.distance}m` : '거리 정보 없음'
+                  } · ${item.address || '주소 없음'} | ${item.openTime}~${
+                    item.closeTime
+                  }`}
                 </Text>
               </View>
             </TouchableOpacity>
@@ -449,6 +537,9 @@ const styles = StyleSheet.create({
   filterButton: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  filterButtonMargin: {
+    marginLeft: 12,
   },
   filterButtonText: {
     fontSize: 14,
