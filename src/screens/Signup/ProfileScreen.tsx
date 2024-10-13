@@ -31,6 +31,8 @@ const ProfileScreen: React.FC<Props> = ({navigation}) => {
       const token = await messaging().getToken();
       setFcmToken(token);
       // console.log('FCM Token:', token);
+      await AsyncStorage.setItem('fcmToken', token);
+
     };
 
     getFcmToken();

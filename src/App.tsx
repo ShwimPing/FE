@@ -3,7 +3,7 @@ import React, {useEffect} from 'react';
 import {NavigationContainer} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import {enableScreens} from 'react-native-screens';
-import {SafeAreaView, StyleSheet, TouchableOpacity} from 'react-native';
+import {SafeAreaView, StyleSheet, Alert, TouchableOpacity} from 'react-native';
 import Svg, {Path, G, Defs, ClipPath, Rect} from 'react-native-svg';
 import Splash from './screens/Splash';
 import Login from './screens/Login';
@@ -25,6 +25,7 @@ import ReviewForm from './screens/ReviewForm';
 import {AuthProvider} from './services/AuthContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ProfileCompleteScreen from './screens/Signup/ProfileCompleteScreen';
+import messaging from '@react-native-firebase/messaging';
 
 const consumerKey = 'XQ774qjn0QvrLziS0efY';
 const consumerSecret = '6OIm7uvnU6';
@@ -96,6 +97,16 @@ const CloseIcon = () => (
 );
 
 const App: React.FC = () => {
+  // foreground 상태
+  useEffect(() => {
+    const unsubscribe = messaging().onMessage(async remoteMessage => {
+      Alert.alert('A new FCM message arrived!', JSON.stringify(remoteMessage));
+    });
+
+    return unsubscribe;
+  }, []);
+
+
   useEffect(() => {
     const clearAsyncStorage = async () => {
       try {
@@ -122,7 +133,6 @@ const App: React.FC = () => {
       console.error('Naver Login initialization failed:', error);
     }
   }, []);
-
 
   return (
     <AuthProvider>
