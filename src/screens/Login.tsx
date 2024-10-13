@@ -18,6 +18,7 @@ import {
 } from '@react-native-seoul/kakao-login';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
+import messaging from '@react-native-firebase/messaging';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
 
@@ -37,6 +38,10 @@ const Login: React.FC<Props> = ({navigation}) => {
 
       if (data?.results) {
         const {role} = data.results;
+
+        const token = await messaging().getToken();
+        await AsyncStorage.setItem('fcmToken', token);
+        // console.log('FCM Token 저장:', token);
 
         if (role === 'GUEST') {
           navigation.navigate('Profile');

@@ -18,6 +18,7 @@ import MapComponent from '../components/MapComponent';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {RootStackParamList} from '../App';
 import Voice from 'react-native-voice';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {PermissionsAndroid, Platform} from 'react-native';
 import {request, PERMISSIONS, RESULTS} from 'react-native-permissions';
 import Geolocation, {GeoPosition} from 'react-native-geolocation-service';
@@ -110,6 +111,23 @@ const Home: React.FC = () => {
     return () => {
       Voice.destroy();
     };
+  }, []);
+
+  useEffect(() => {
+    const getFcmToken = async () => {
+      try {
+        const fcmToken = await AsyncStorage.getItem('fcmToken');
+        if (fcmToken) {
+          console.log('FCM Token:', fcmToken);
+        } else {
+          console.log('FCM 토큰이 없습니다.');
+        }
+      } catch (error) {
+        console.error('FCM 토큰을 가져오는 중 오류 발생:', error);
+      }
+    };
+
+    getFcmToken();
   }, []);
 
   const startVoiceRecognition = async () => {

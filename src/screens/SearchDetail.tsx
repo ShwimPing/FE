@@ -542,16 +542,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   restInfoBox: {
-    display: 'flex',
-    width: 343,
-    height: 188,
     padding: 18,
     flexDirection: 'column',
     gap: 10,
     flexShrink: 0,
-    borderRadius: 10,
     backgroundColor: '#F8F9FA',
     marginBottom: 20,
+    flex: 1,
   },
   restInfoTitle: {
     color: '#FF5252',
