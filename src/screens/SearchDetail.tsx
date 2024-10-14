@@ -49,6 +49,7 @@ interface PlaceDetail {
 interface Review {
   reviewId: number;
   writer: string;
+  profileImageUrl:string;
   content: string;
   rating: number;
   date: string;
@@ -286,9 +287,9 @@ const SearchDetail: React.FC = () => {
                   <View style={styles.reviewUser}>
                     <Image
                       source={
-                        review.reviewImageUrl &&
-                        review.reviewImageUrl.trim() !== ''
-                          ? {uri: review.reviewImageUrl}
+                        review.profileImageUrl &&
+                        review.profileImageUrl.trim() !== ''
+                          ? {uri: review.profileImageUrl}
                           : require('../../assets/images/profile.png')
                       }
                       style={styles.profileImage}

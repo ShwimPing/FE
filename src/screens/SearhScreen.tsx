@@ -262,22 +262,22 @@ const SearchScreen: React.FC<Props> = ({navigation}) => {
                   <ScrollView>
                     <TouchableOpacity
                       style={styles.filterOption}
-                      onPress={() => handleDistanceSelect('10km', 10000)}>
+                      onPress={() => handleDistanceSelect('100km', 100000)}>
                       <Text style={styles.filterOptionText}>10km</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={styles.filterOption}
-                      onPress={() => handleDistanceSelect('30km', 30000)}>
+                      onPress={() => handleDistanceSelect('300km', 300000)}>
                       <Text style={styles.filterOptionText}>30km</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={styles.filterOption}
-                      onPress={() => handleDistanceSelect('50km', 50000)}>
+                      onPress={() => handleDistanceSelect('500km', 500000)}>
                       <Text style={styles.filterOptionText}>50km</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={styles.filterOption}
-                      onPress={() => handleDistanceSelect('100km', 100000)}>
+                      onPress={() => handleDistanceSelect('1000km', 1000000)}>
                       <Text style={styles.filterOptionText}>100km</Text>
                     </TouchableOpacity>
                   </ScrollView>

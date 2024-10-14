@@ -27,6 +27,7 @@ const MyPage = () => {
   const navigation = useNavigation<MyPageNavigationProp>();
   const [isPushEnabled, setIsPushEnabled] = useState(false);
   const [nickname, setNickname] = useState('');
+  const [profileImageUrl, setProfileImageUrl] = useState('');
   const [loading, setLoading] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -53,6 +54,7 @@ const MyPage = () => {
 
           if (response.data.isSuccess) {
             setNickname(response.data.results.nickname);
+            setProfileImageUrl(response.data.results.profileImageUrl || ''); // 프로필 이미지 URL 설정
             setIsLoggedIn(true);
           } else {
             Alert.alert('오류', '유저 정보를 불러오지 못했습니다.');
@@ -171,7 +173,11 @@ const MyPage = () => {
         <ScrollView contentContainerStyle={styles.container}>
           <View style={styles.profileSection}>
           <Image
-              source={getProfileIcon()}
+              source={
+                profileImageUrl
+                  ? { uri: profileImageUrl }
+                  : getProfileIcon()
+              }
               style={styles.profileImage}
             />
             <View style={styles.nicknameSection}>
