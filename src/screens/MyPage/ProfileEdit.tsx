@@ -1,5 +1,4 @@
 /* eslint-disable react-native/no-inline-styles */
-/* eslint-disable no-trailing-spaces */
 import React, {useState, useEffect} from 'react';
 import {
   View,
@@ -17,7 +16,10 @@ import Svg, {Path, G, ClipPath, Rect, Defs} from 'react-native-svg';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useNavigation} from '@react-navigation/native';
-import {NativeStackScreenProps, NativeStackNavigationProp} from '@react-navigation/native-stack';
+import {
+  NativeStackScreenProps,
+  NativeStackNavigationProp,
+} from '@react-navigation/native-stack';
 import {RootStackParamList} from '../../App';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ProfileEdit'>;
@@ -29,11 +31,47 @@ const ProfileEdit: React.FC<Props> = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [profileImage, setProfileImage] = useState<any>(null);
+  const [existingProfileImage, setExistingProfileImage] = useState<
+    string | null
+  >(null);
 
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const authToken = await AsyncStorage.getItem('accessToken');
+        if (!authToken) {
+          Alert.alert('인증 오류', '로그인이 필요합니다.');
+          return;
+        }
+
+        const response = await axios.get('http://211.188.51.4/mypage', {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+          },
+        });
+
+        if (response.data.isSuccess) {
+          setNickname(response.data.results.nickname);
+          setExistingProfileImage(
+            response.data.results.profileImageUrl || null,
+          );
+        } else {
+          Alert.alert('오류', '유저 정보를 불러오지 못했습니다.');
+        }
+      } catch (error) {
+        console.error('프로필 불러오기 오류:', error);
+        Alert.alert('오류', '프로필 정보를 불러오는 중 오류가 발생했습니다.');
+      }
+    };
+
+    fetchProfile();
+  }, []);
 
   const handleProfileImageChange = () => {
-    launchImageLibrary({mediaType: 'photo'}, (response) => {
+    launchImageLibrary({mediaType: 'photo'}, response => {
       if (response.didCancel) {
         console.log('이미지 선택 취소');
       } else if (response.errorCode) {
@@ -50,19 +88,19 @@ const ProfileEdit: React.FC<Props> = () => {
     try {
       setIsSubmitting(true);
       const authToken = await AsyncStorage.getItem('accessToken');
-  
+
       if (!authToken) {
         Alert.alert('인증 오류', '로그인이 필요합니다.');
         return;
       }
 
       const formData = new FormData();
-      formData.append('request', JSON.stringify({ nickname }));
-      
+      formData.append('request', JSON.stringify({nickname}));
+
       if (profileImage) {
         formData.append('file', {
           uri: profileImage.uri,
-          name: profileImage.fileName || 'profile.jpg',  
+          name: profileImage.fileName || 'profile.jpg',
           type: profileImage.type,
         });
       }
@@ -77,7 +115,7 @@ const ProfileEdit: React.FC<Props> = () => {
           },
         },
       );
-  
+
       if (response.data.isSuccess) {
         setIsNicknameValid(true);
         setNicknameMessage('닉네임 변경 성공');
@@ -94,7 +132,7 @@ const ProfileEdit: React.FC<Props> = () => {
       } else {
         console.error('요청 실패:', (error as Error).message);
       }
-  
+
       setIsNicknameValid(false);
       setNicknameMessage('닉네임 수정 중 문제 발생');
     } finally {
@@ -131,6 +169,8 @@ const ProfileEdit: React.FC<Props> = () => {
               source={
                 profileImage
                   ? {uri: profileImage.uri}
+                  : existingProfileImage
+                  ? {uri: existingProfileImage}
                   : require('../../../assets/images/profile.png')
               }
               style={styles.profileImage}
@@ -167,7 +207,13 @@ const ProfileEdit: React.FC<Props> = () => {
             <Text style={styles.label}>닉네임</Text>
             <View style={styles.inputRow}>
               <TextInput
-                style={[styles.nicknameInput, { borderColor: isNicknameValid ? '#F8F9FA' : '#FF5252', borderWidth: isNicknameValid ? 0 : 1 }]}
+                style={[
+                  styles.nicknameInput,
+                  {
+                    borderColor: isNicknameValid ? '#F8F9FA' : '#FF5252',
+                    borderWidth: isNicknameValid ? 0 : 1,
+                  },
+                ]}
                 value={nickname}
                 onChangeText={text => setNickname(text)}
                 placeholder="닉네임을 입력하세요"
@@ -189,10 +235,17 @@ const ProfileEdit: React.FC<Props> = () => {
       {!keyboardVisible && (
         <View style={styles.footer}>
           <TouchableOpacity
-            style={[styles.nextButton, {backgroundColor: nickname ? '#222' : '#F8F9FA'}]}
+            style={[
+              styles.nextButton,
+              {backgroundColor: nickname ? '#222' : '#F8F9FA'},
+            ]}
             onPress={handleNicknameChange}
             disabled={!nickname || isSubmitting}>
-            <Text style={[styles.nextButtonText, {color: nickname ? '#FFF' : '#D2D3D3'}]}>
+            <Text
+              style={[
+                styles.nextButtonText,
+                {color: nickname ? '#FFF' : '#D2D3D3'},
+              ]}>
               수정하기
             </Text>
           </TouchableOpacity>
