@@ -1,5 +1,5 @@
 /* eslint-disable react/no-unstable-nested-components */
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {NavigationContainer} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import {enableScreens} from 'react-native-screens';
@@ -27,8 +27,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import ProfileCompleteScreen from './screens/Signup/ProfileCompleteScreen';
 import messaging from '@react-native-firebase/messaging';
 import PushNotification from 'react-native-push-notification';
-import {FirebaseMessagingTypes} from '@react-native-firebase/messaging';
 import Onboarding from './screens/MyPage/Onboarding';
+import notifee, { AndroidStyle }  from '@notifee/react-native';
 
 const consumerKey = 'XQ774qjn0QvrLziS0efY';
 const consumerSecret = '6OIm7uvnU6';
@@ -103,8 +103,6 @@ const CloseIcon = () => (
 const App: React.FC = () => {
   const [isFirstLaunch, setIsFirstLaunch] = useState<boolean | null>(null);
 
-  const lastMessageIdRef = useRef<string | null>(null);
-
   useEffect(() => {
     const resetOnboarding = async () => {
       try {
@@ -117,6 +115,60 @@ const App: React.FC = () => {
 
     resetOnboarding();
   }, []);
+
+  const requestNotificationPermission = async () => {
+    const settings = await notifee.requestPermission();
+    if (settings.authorizationStatus === 1) { // 1 = AUTHORIZED
+      console.log('알림 권한이 허용되었습니다.');
+    } else {
+      console.log('알림 권한이 거부되었습니다.');
+    }
+  };
+
+  useEffect(() => {
+    requestNotificationPermission();
+
+    PushNotification.createChannel(
+      {
+        channelId: 'default-channel-id',
+        channelName: 'Default Channel',
+        importance: 4,
+        vibrate: true,
+      },
+      created => console.log(`알림 채널 생성: ${created ? '성공' : '이미 존재'}`),
+    );
+  }, []);
+
+
+  const onDisplayNotification = async ({
+    title = '',
+    body = '',
+  }: {
+    title?: string;
+    body?: string;
+  }) => {
+    console.log('알림 표시:', title, body);
+
+    const channelId = await notifee.createChannel({
+      id: 'default-channel-id',
+      name: 'Default Channel',
+    });
+
+    await notifee.displayNotification({
+      title,
+      body,
+      android: {
+        channelId,
+        smallIcon: 'logo',
+        largeIcon: 'logo',
+        style: {
+          type: AndroidStyle.BIGTEXT,
+          text: body,
+        },
+      },
+    });
+    console.log('알림 표시 완료');
+  };
 
   useEffect(() => {
     const checkFirstLaunch = async () => {
@@ -136,80 +188,20 @@ const App: React.FC = () => {
     checkFirstLaunch();
   }, []);
 
-  useEffect(() => {
-    PushNotification.createChannel(
-      {
-        channelId: 'default-channel-id',
-        channelName: 'Default Channel',
-        importance: 4,
-        vibrate: true,
-      },
-      created =>
-        console.log(`알림 채널 생성: ${created ? '성공' : '이미 존재'}`),
-    );
-  }, []);
 
   useEffect(() => {
-    const handleIncomingMessage = async (
-      remoteMessage: FirebaseMessagingTypes.RemoteMessage,
-    ) => {
-      const {notification, messageId} = remoteMessage;
-
-      if (!messageId) {
-        console.log('메시지 ID 없음, 처리 중단');
+    const unsubscribe = messaging().onMessage(async remoteMessage => {
+      console.log('수신한 푸시 메시지:', remoteMessage);
+      const title = remoteMessage?.notification?.title;
+      const body = remoteMessage?.notification?.body;
+      if (!title || !body) {
+        console.error('제목 또는 본문이 없습니다.');
         return;
       }
-
-      if (lastMessageIdRef.current === messageId) {
-        console.log(`중복 메시지 감지: ${messageId}, 처리 중단`);
-        return;
-      }
-
-      lastMessageIdRef.current = messageId;
-      console.log(`새로운 메시지 처리 중: ${messageId}`);
-
-      const fcmToken = await messaging().getToken();
-      console.log('FCM Token:', fcmToken);
-
-      const requestBody = {
-        fcmToken: fcmToken,
-        title: notification?.title || 'Default Title',
-        body: notification?.body || 'Default Body',
-      };
-
-      try {
-        const response = await fetch('http://211.188.51.4/feign/fcm', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(requestBody),
-        });
-
-        if (!response.ok) {
-          console.error('서버 요청 실패:', response.statusText);
-        } else {
-          const data = await response.json();
-          console.log('서버 응답:', data);
-        }
-      } catch (error) {
-        console.error('서버 요청 중 오류 발생:', error);
-      }
-
-      PushNotification.localNotification({
-        channelId: 'default-channel-id',
-        title: notification?.title || 'New FCM Message',
-        message: notification?.body || 'You have received a new notification',
-        playSound: true,
-        soundName: 'default',
-        importance: 'high',
-      });
-    };
-
-    const unsubscribe = messaging().onMessage(handleIncomingMessage);
+      await onDisplayNotification({title, body});
+    });
 
     return () => {
-      console.log('메시지 수신 핸들러 해제');
       unsubscribe();
     };
   }, []);
@@ -245,7 +237,7 @@ const App: React.FC = () => {
     <AuthProvider>
       <SafeAreaView style={styles.container}>
         <NavigationContainer>
-        <Stack.Navigator
+          <Stack.Navigator
             initialRouteName={isFirstLaunch ? 'Onboarding' : 'Splash'}
             screenOptions={{
               headerShown: false,
