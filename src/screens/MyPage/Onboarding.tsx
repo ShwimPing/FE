@@ -10,6 +10,8 @@ import {
   NativeSyntheticEvent,
   NativeScrollEvent,
 } from 'react-native';
+import {useNavigation, NavigationProp} from '@react-navigation/native'; // 수정
+import { RootStackParamList } from '../../App';
 
 const {width} = Dimensions.get('window');
 
@@ -23,6 +25,7 @@ type Slide = {
 const Onboarding: React.FC = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef<FlatList<Slide> | null>(null);
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>(); // 타입 지정
 
   const slides: Slide[] = [
     {
@@ -49,6 +52,11 @@ const Onboarding: React.FC = () => {
     if (flatListRef.current) {
       flatListRef.current.scrollToIndex({index: currentIndex + 1});
     }
+  };
+
+  const handleStart = () => {
+    // "쉼핑 시작하기"를 눌렀을 때 Splash 화면으로 이동
+    navigation.navigate('Splash');
   };
 
   const onScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -87,7 +95,7 @@ const Onboarding: React.FC = () => {
         ))}
       </View>
       {currentIndex === slides.length - 1 ? (
-        <TouchableOpacity style={styles.imageButton} onPress={handleNext}>
+        <TouchableOpacity style={styles.imageButton} onPress={handleStart}>
           <Image
             source={require('../../../assets/images/onboardbtn.png')}
             style={styles.buttonImage}
