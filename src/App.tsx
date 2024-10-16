@@ -245,21 +245,14 @@ const App: React.FC = () => {
     <AuthProvider>
       <SafeAreaView style={styles.container}>
         <NavigationContainer>
-          <Stack.Navigator
-            initialRouteName="Splash"
+        <Stack.Navigator
+            initialRouteName={isFirstLaunch ? 'Onboarding' : 'Splash'}
             screenOptions={{
               headerShown: false,
               animation: 'fade',
             }}>
-            {isFirstLaunch ? (
-              <Stack.Screen
-                name="Onboarding"
-                component={Onboarding}
-                options={{headerShown: false}}
-              />
-            ) : (
-              <Stack.Screen name="Splash" component={Splash} />
-            )}
+            <Stack.Screen name="Onboarding" component={Onboarding} />
+            <Stack.Screen name="Splash" component={Splash} />
             <Stack.Screen
               name="Login"
               component={Login}
