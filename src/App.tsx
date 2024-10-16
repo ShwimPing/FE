@@ -1,9 +1,9 @@
 /* eslint-disable react/no-unstable-nested-components */
-import React, {useEffect} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {NavigationContainer} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import {enableScreens} from 'react-native-screens';
-import {SafeAreaView, StyleSheet, Alert, TouchableOpacity} from 'react-native';
+import {SafeAreaView, StyleSheet, TouchableOpacity} from 'react-native';
 import Svg, {Path, G, Defs, ClipPath, Rect} from 'react-native-svg';
 import Splash from './screens/Splash';
 import Login from './screens/Login';
@@ -26,6 +26,9 @@ import {AuthProvider} from './services/AuthContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ProfileCompleteScreen from './screens/Signup/ProfileCompleteScreen';
 import messaging from '@react-native-firebase/messaging';
+import PushNotification from 'react-native-push-notification';
+import {FirebaseMessagingTypes} from '@react-native-firebase/messaging';
+import Onboarding from './screens/MyPage/Onboarding';
 
 const consumerKey = 'XQ774qjn0QvrLziS0efY';
 const consumerSecret = '6OIm7uvnU6';
@@ -35,6 +38,7 @@ enableScreens();
 
 export type RootStackParamList = {
   Splash: undefined;
+  Onboarding: undefined;
   Login: undefined;
   Terms: undefined;
   EmailPassword: undefined;
@@ -97,15 +101,118 @@ const CloseIcon = () => (
 );
 
 const App: React.FC = () => {
-  // foreground 상태
-  useEffect(() => {
-    const unsubscribe = messaging().onMessage(async remoteMessage => {
-      Alert.alert('A new FCM message arrived!', JSON.stringify(remoteMessage));
-    });
+  const [isFirstLaunch, setIsFirstLaunch] = useState<boolean | null>(null);
 
-    return unsubscribe;
+  const lastMessageIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const resetOnboarding = async () => {
+      try {
+        await AsyncStorage.removeItem('isFirstLaunch');
+        console.log('Onboarding 상태 초기화');
+      } catch (error) {
+        console.error('Error resetting onboarding state:', error);
+      }
+    };
+
+    resetOnboarding();
   }, []);
 
+  useEffect(() => {
+    const checkFirstLaunch = async () => {
+      try {
+        const firstLaunch = await AsyncStorage.getItem('isFirstLaunch');
+        if (firstLaunch === null) {
+          setIsFirstLaunch(true);
+          await AsyncStorage.setItem('isFirstLaunch', 'false');
+        } else {
+          setIsFirstLaunch(false);
+        }
+      } catch (error) {
+        console.error('Error checking first launch:', error);
+      }
+    };
+
+    checkFirstLaunch();
+  }, []);
+
+  useEffect(() => {
+    PushNotification.createChannel(
+      {
+        channelId: 'default-channel-id',
+        channelName: 'Default Channel',
+        importance: 4,
+        vibrate: true,
+      },
+      created =>
+        console.log(`알림 채널 생성: ${created ? '성공' : '이미 존재'}`),
+    );
+  }, []);
+
+  useEffect(() => {
+    const handleIncomingMessage = async (
+      remoteMessage: FirebaseMessagingTypes.RemoteMessage,
+    ) => {
+      const {notification, messageId} = remoteMessage;
+
+      if (!messageId) {
+        console.log('메시지 ID 없음, 처리 중단');
+        return;
+      }
+
+      if (lastMessageIdRef.current === messageId) {
+        console.log(`중복 메시지 감지: ${messageId}, 처리 중단`);
+        return;
+      }
+
+      lastMessageIdRef.current = messageId;
+      console.log(`새로운 메시지 처리 중: ${messageId}`);
+
+      const fcmToken = await messaging().getToken();
+      console.log('FCM Token:', fcmToken);
+
+      const requestBody = {
+        fcmToken: fcmToken,
+        title: notification?.title || 'Default Title',
+        body: notification?.body || 'Default Body',
+      };
+
+      try {
+        const response = await fetch('http://211.188.51.4/feign/fcm', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestBody),
+        });
+
+        if (!response.ok) {
+          console.error('서버 요청 실패:', response.statusText);
+        } else {
+          const data = await response.json();
+          console.log('서버 응답:', data);
+        }
+      } catch (error) {
+        console.error('서버 요청 중 오류 발생:', error);
+      }
+
+      PushNotification.localNotification({
+        channelId: 'default-channel-id',
+        title: notification?.title || 'New FCM Message',
+        message: notification?.body || 'You have received a new notification',
+        playSound: true,
+        soundName: 'default',
+        importance: 'high',
+      });
+    };
+
+    const unsubscribe = messaging().onMessage(handleIncomingMessage);
+
+    return () => {
+      console.log('메시지 수신 핸들러 해제');
+      unsubscribe();
+    };
+  }, []);
 
   useEffect(() => {
     const clearAsyncStorage = async () => {
@@ -144,7 +251,15 @@ const App: React.FC = () => {
               headerShown: false,
               animation: 'fade',
             }}>
-            <Stack.Screen name="Splash" component={Splash} />
+            {isFirstLaunch ? (
+              <Stack.Screen
+                name="Onboarding"
+                component={Onboarding}
+                options={{headerShown: false}}
+              />
+            ) : (
+              <Stack.Screen name="Splash" component={Splash} />
+            )}
             <Stack.Screen
               name="Login"
               component={Login}

@@ -28,25 +28,24 @@ const Onboarding: React.FC = () => {
     {
       id: '1',
       image: require('../../../assets/images/onboard1.png'),
-      title: '쉘터 한 눈에 파악하기',
-      description: '홈화면에서 다양한 쉘터를 종류별로 쉽게 확인해요',
+      title: '쉼터 한 눈에 파악하기',
+      description: '홈화면에서 다양한 쉼터를\n종류별로 쉽게 확인해요',
     },
     {
       id: '2',
       image: require('../../../assets/images/onboard2.png'),
-      title: '쉘터 이야기 남기기',
-      description: '쉘터 방문 후기를 작성하고 다른 사용자의 리뷰도 확인해요',
+      title: '쉼터 이야기 남기기',
+      description: '쉼터 방문 후기를 작성하고\n다른 사용자의 리뷰도 확인해요',
     },
     {
       id: '3',
       image: require('../../../assets/images/onboard3.png'),
-      title: '음성 인식으로 쉘터 찾기',
-      description: '음성 인식 기능으로 원하는 쉘터를 손쉽게 찾아보세요',
+      title: '음성 인식으로 쉼터 찾기',
+      description: '음성 인식 기능으로\n원하는 쉼터를 손쉽게 찾아보세요',
     },
   ];
 
   const handleNext = () => {
-    // flatListRef가 null이 아닐 때만 scrollToIndex를 호출합니다.
     if (flatListRef.current) {
       flatListRef.current.scrollToIndex({index: currentIndex + 1});
     }
@@ -59,9 +58,9 @@ const Onboarding: React.FC = () => {
 
   const renderItem = ({item}: {item: Slide}) => (
     <View style={styles.slide}>
-      <Image source={item.image} style={styles.image} />
       <Text style={styles.title}>{item.title}</Text>
       <Text style={styles.description}>{item.description}</Text>
+      <Image source={item.image} style={styles.image} />
     </View>
   );
 
@@ -87,9 +86,19 @@ const Onboarding: React.FC = () => {
           />
         ))}
       </View>
-      <TouchableOpacity style={styles.button} onPress={handleNext}>
-        <Text style={styles.buttonText}>다음</Text>
-      </TouchableOpacity>
+      {currentIndex === slides.length - 1 ? (
+        <TouchableOpacity style={styles.imageButton} onPress={handleNext}>
+          <Image
+            source={require('../../../assets/images/onboardbtn.png')}
+            style={styles.buttonImage}
+          />
+          <Text style={styles.buttonText}>쉼핑 시작하기</Text>
+        </TouchableOpacity>
+      ) : (
+        <TouchableOpacity style={styles.button} onPress={handleNext}>
+          <Text style={styles.buttonText}>다음</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 };
@@ -105,6 +114,7 @@ const styles = StyleSheet.create({
     width,
     alignItems: 'center',
     padding: 20,
+    marginBottom: 10,
   },
   image: {
     width: '100%',
@@ -112,16 +122,17 @@ const styles = StyleSheet.create({
     resizeMode: 'contain',
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-    marginVertical: 10,
+    fontSize: 20,
+    fontFamily: 'Pretendard-Bold',
+    color: '#1A1A1B',
+    marginTop: 77,
   },
   description: {
-    fontSize: 16,
-    color: '#777',
+    fontSize: 14,
+    color: '#7F7F86)',
     textAlign: 'center',
-    paddingHorizontal: 30,
+    marginTop: 8,
+    marginBottom: 26,
   },
   pagination: {
     flexDirection: 'row',
@@ -148,13 +159,26 @@ const styles = StyleSheet.create({
     padding: 15,
     width: '80%',
     borderRadius: 10,
+    height: 50,
     alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 40,
+  },
+  buttonImage: {
+    width: 343,
+    height: 50,
+    resizeMode: 'contain',
+  },
+  imageButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 40,
   },
   buttonText: {
+    position: 'absolute',
     color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 14,
+    fontFamily: 'Pretendard-Bold',
   },
 });
 

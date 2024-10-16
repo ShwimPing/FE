@@ -37,9 +37,12 @@ const Login: React.FC<Props> = ({navigation}) => {
       const data = await login(email, password);
 
       if (data?.results) {
-        const {role} = data.results;
+        const {role, accessToken} = data.results;
 
         const token = await messaging().getToken();
+        await AsyncStorage.setItem('accessToken', accessToken);
+        console.log('저장된 액세스 토큰:', accessToken);
+
         await AsyncStorage.setItem('fcmToken', token);
         // console.log('FCM Token 저장:', token);
 
@@ -109,7 +112,6 @@ const Login: React.FC<Props> = ({navigation}) => {
         {headers: {'Content-Type': 'application/json'}},
       );
 
-      console.log('서버 응답:', response.data);
       if (response.data.isSuccess && response.data.results) {
         const serverAccessToken = response.data.results.accessToken;
         const role = response.data.results.role;
