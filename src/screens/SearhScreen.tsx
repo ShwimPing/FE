@@ -29,7 +29,7 @@ const SearchScreen: React.FC<Props> = ({navigation}) => {
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState('별점순');
   const [distanceModalVisible, setDistanceModalVisible] = useState(false);
-  const [maxDistance, setMaxDistance] = useState(10000);
+  const [maxDistance, setMaxDistance] = useState(1000000);
   const [selectedDistance, setSelectedDistance] = useState('최대 거리');
   const [isFilterPressed, setIsFilterPressed] = useState<string | null>(null);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);

@@ -47,7 +47,7 @@ const MapComponent = () => {
     longitude: number;
   } | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<string>('TOGETHER');
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [district, setDistrict] = useState<string>('');
   const [markers, setMarkers] = useState<
     {latitude: number; longitude: number; placeId: number; category: string}[]
@@ -110,7 +110,6 @@ const MapComponent = () => {
     [selectedCategory],
   );
 
-  // 카테고리별 주변 장소를 가져오는 함수
   const fetchNearbyPlaces = async (
     latitude: number,
     longitude: number,
@@ -118,44 +117,43 @@ const MapComponent = () => {
     category: string,
   ) => {
     try {
-      // 전체 카테고리가 선택되었을 경우
       if (category === '') {
-        const allCategories = ['HOT', 'COLD', 'LIBRARY', 'SMART', 'TOGETHER']; // 모든 카테고리
-        let allMarkers: any[] = [];
-
-        // 각 카테고리의 데이터를 비동기적으로 모두 가져옴
-        for (let cat of allCategories) {
-          const response = await axios.get(
-            'http://211.188.51.4/places/nearby',
-            {
-              params: {
-                longitude,
-                latitude,
-                radius: 1000,
-                category: cat,
-                region,
-              },
+        // 전체 카테고리 선택 시 병렬로 API 요청을 보내기 위한 Promise 배열 생성
+        const allCategories = ['HOT', 'COLD', 'LIBRARY', 'SMART', 'TOGETHER'];
+        const requests = allCategories.map(cat =>
+          axios.get('http://211.188.51.4/places/nearby', {
+            params: {
+              longitude,
+              latitude,
+              radius: 1000,
+              category: cat,
+              region,
             },
-          );
+          }),
+        );
 
+        // 모든 API 요청을 병렬로 처리
+        const responses = await Promise.all(requests);
+
+        // 응답 데이터를 마커로 변환
+        const allMarkers = responses.reduce((acc, response, idx) => {
           if (response.data.isSuccess) {
             const places = response.data.results.placeList || [];
-            allMarkers = [
-              ...allMarkers,
+            acc.push(
               ...places.map((place: any) => ({
                 latitude: place.latitude,
                 longitude: place.longitude,
                 placeId: place.placeId,
-                category: cat, // 카테고리 정보 포함
+                category: allCategories[idx], // 카테고리 정보 포함
               })),
-            ];
+            );
           }
-        }
+          return acc;
+        }, [] as any[]);
 
-        // 모든 카테고리의 마커를 통합하여 설정
         setMarkers(allMarkers);
       } else {
-        // 선택된 특정 카테고리의 데이터를 가져옴
+        // 특정 카테고리 선택 시
         const response = await axios.get('http://211.188.51.4/places/nearby', {
           params: {
             longitude,
@@ -168,22 +166,14 @@ const MapComponent = () => {
 
         if (response.data.isSuccess) {
           const places = response.data.results.placeList || [];
-
-          if (Array.isArray(places)) {
-            setMarkers(
-              places.map((place: any) => ({
-                latitude: place.latitude,
-                longitude: place.longitude,
-                placeId: place.placeId,
-                category, // 선택된 카테고리 설정
-              })),
-            );
-          } else {
-            console.warn(
-              'Unexpected format: results.placeList is not an array.',
-            );
-            setMarkers([]);
-          }
+          setMarkers(
+            places.map((place: any) => ({
+              latitude: place.latitude,
+              longitude: place.longitude,
+              placeId: place.placeId,
+              category,
+            })),
+          );
         } else {
           console.warn('데이터 가져오기 실패:', response.data.message);
         }
