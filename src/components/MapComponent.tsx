@@ -361,10 +361,10 @@ const MapComponent = () => {
           <Marker
             key={index}
             coordinate={marker}
-            image={getMarkerImage(marker.category)} // 마커 이미지 적용
-            width={36} // 마커 이미지 가로 크기
-            height={36} // 마커 이미지 세로 크기
-            onClick={() => handleMarkerClick(marker.placeId)} // placeId 전달
+            image={getMarkerImage(marker.category)}
+            width={44}
+            height={44}
+            onClick={() => handleMarkerClick(marker.placeId)}
           />
         ))}
       </NaverMapView>
